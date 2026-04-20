@@ -7,7 +7,10 @@ fastapi>=0.110.0
 uvicorn>=0.29.0
 
 # Native window wrapper
-pywebview>=4.4.0
+# macOS/Linux — uses default WebKit renderer
+# Windows     — uses Edge/Chromium (WebView2), no admin rights needed
+pywebview>=4.4.0; sys_platform != "win32"
+pywebview[edge2]>=4.4.0; sys_platform == "win32"
 
 # Secure password storage (OS keychain)
 keyring>=25.0.0
