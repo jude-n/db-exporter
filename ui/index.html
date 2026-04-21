@@ -8,459 +8,213 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #111314;
-    --surface: #1a1d1f;
-    --surface2: #212426;
-    --border: #2a2e31;
-    --border2: #333739;
-    --text: #e8eaeb;
-    --text2: #8a9099;
-    --text3: #555e66;
-    --accent: #3b82f6;
-    --accent-dim: #1d4ed8;
-    --success: #22c55e;
-    --error: #ef4444;
-    --warning: #f59e0b;
-    --mono: 'IBM Plex Mono', monospace;
-    --sans: 'IBM Plex Sans', sans-serif;
+    --bg: #111314; --surface: #1a1d1f; --surface2: #212426;
+    --border: #2a2e31; --border2: #333739;
+    --text: #e8eaeb; --text2: #8a9099; --text3: #555e66;
+    --accent: #3b82f6; --accent-dim: #1d4ed8;
+    --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
+    --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
     --radius: 6px;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--sans); background: var(--bg); color: var(--text);
+    height: 100vh; display: flex; flex-direction: column; overflow: hidden; font-size: 13px; }
 
-  body {
-    font-family: var(--sans);
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    font-size: 13px;
-  }
+  /* Titlebar */
+  .titlebar { height: 38px; background: var(--surface); border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 16px; gap: 10px;
+    -webkit-app-region: drag; flex-shrink: 0; }
+  .titlebar-title { font-family: var(--mono); font-size: 11px; font-weight: 500;
+    color: var(--text2); letter-spacing: 0.08em; text-transform: uppercase; }
+  .titlebar-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); opacity: 0.6; }
 
-  .titlebar {
-    height: 38px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 16px;
-    gap: 10px;
-    -webkit-app-region: drag;
-    flex-shrink: 0;
-  }
-  .titlebar-title {
-    font-family: var(--mono);
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text2);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-  }
-  .titlebar-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    opacity: 0.6;
-  }
-
-  .layout {
-    display: flex;
-    flex: 1;
-    overflow: hidden;
-  }
+  .layout { display: flex; flex: 1; overflow: hidden; }
 
   /* Sidebar */
-  .sidebar {
-    width: 220px;
-    background: var(--surface);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-    overflow: hidden;
-  }
+  .sidebar { width: 240px; background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; overflow: hidden; }
+  .sidebar-header { padding: 10px 12px 6px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+  .sidebar-label { font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--text3); }
+  .sidebar-scroll { flex: 1; overflow-y: auto; padding: 6px 0; }
 
-  .sidebar-section {
-    padding: 12px 12px 8px;
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-  }
+  /* Group */
+  .group-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px;
+    cursor: pointer; user-select: none; border-radius: 4px; margin: 1px 6px;
+    transition: background 0.1s; }
+  .group-header:hover { background: var(--surface2); }
+  .group-color-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .group-name { font-size: 12px; font-weight: 600; color: var(--text); flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .group-chevron { font-size: 9px; color: var(--text3); transition: transform 0.15s; flex-shrink: 0; }
+  .group-header.collapsed .group-chevron { transform: rotate(-90deg); }
+  .group-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+  .group-header:hover .group-actions { opacity: 1; }
+  .group-action-btn { background: none; border: none; color: var(--text3); cursor: pointer;
+    padding: 2px 4px; border-radius: 3px; font-size: 11px; line-height: 1; }
+  .group-action-btn:hover { background: var(--border2); color: var(--text); }
+  .group-checkbox { width: 13px; height: 13px; border: 1.5px solid var(--border2);
+    border-radius: 3px; background: var(--surface2); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; transition: all 0.1s; }
+  .group-header.all-selected .group-checkbox,
+  .group-header.some-selected .group-checkbox { border-color: var(--accent); }
+  .group-header.all-selected .group-checkbox { background: var(--accent); }
+  .group-header.some-selected .group-checkbox { background: rgba(59,130,246,0.3); }
+  .group-checkbox svg { display: none; }
+  .group-header.all-selected .group-checkbox svg { display: block; }
+  .group-profiles { overflow: hidden; }
+  .group-profiles.collapsed { display: none; }
 
-  .sidebar-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin-bottom: 8px;
-    padding: 0 4px;
-  }
-
-  /* Multi-select profile list */
-  .profile-list {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    max-height: 220px;
-    overflow-y: auto;
-    margin-bottom: 6px;
-  }
-
-  .profile-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 5px 7px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.1s;
-    user-select: none;
-  }
-  .profile-item:hover { background: var(--surface2); border-color: var(--border); }
-  .profile-item.selected { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
-  .profile-item.active-single { border-color: var(--accent); background: rgba(59,130,246,0.12); }
-
-  .profile-checkbox {
-    width: 13px; height: 13px;
-    border: 1.5px solid var(--border2);
-    border-radius: 3px;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.1s;
-  }
-  .profile-item.selected .profile-checkbox {
-    background: var(--accent);
-    border-color: var(--accent);
-  }
+  /* Profile item */
+  .profile-item { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 28px;
+    cursor: pointer; user-select: none; border-radius: 4px; margin: 1px 6px;
+    transition: background 0.1s; position: relative; }
+  .profile-item:hover { background: var(--surface2); }
+  .profile-item.selected { background: rgba(59,130,246,0.08); }
+  .profile-item.active { outline: 1px solid var(--accent); }
+  .profile-color-bar { position: absolute; left: 18px; top: 50%; transform: translateY(-50%);
+    width: 2px; height: 60%; border-radius: 1px; }
+  .profile-checkbox { width: 13px; height: 13px; border: 1.5px solid var(--border2);
+    border-radius: 3px; background: var(--surface2); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; transition: all 0.1s; }
+  .profile-item.selected .profile-checkbox { background: var(--accent); border-color: var(--accent); }
   .profile-checkbox svg { display: none; }
   .profile-item.selected .profile-checkbox svg { display: block; }
+  .profile-item-name { font-size: 11px; color: var(--text2); flex: 1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .profile-item.selected .profile-item-name,
+  .profile-item.active .profile-item-name { color: var(--text); }
+  .profile-fmt { font-family: var(--mono); font-size: 9px; padding: 1px 4px;
+    border-radius: 3px; background: var(--border); color: var(--text3); flex-shrink: 0; }
+  .profile-actions { display: flex; gap: 2px; opacity: 0; transition: opacity 0.1s; }
+  .profile-item:hover .profile-actions { opacity: 1; }
+  .profile-action-btn { background: none; border: none; color: var(--text3); cursor: pointer;
+    padding: 2px 3px; border-radius: 3px; font-size: 10px; }
+  .profile-action-btn:hover { background: var(--border2); color: var(--text); }
 
-  .profile-item-name {
-    font-size: 12px;
-    color: var(--text2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    flex: 1;
-  }
-  .profile-item.selected .profile-item-name { color: var(--text); }
+  /* Ungrouped section */
+  .ungrouped-header { display: flex; align-items: center; gap: 6px; padding: 5px 8px 5px 10px;
+    cursor: pointer; user-select: none; }
+  .ungrouped-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--text3); flex: 1; }
 
-  .profile-fmt-badge {
-    font-family: var(--mono);
-    font-size: 9px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: var(--border);
-    color: var(--text3);
-    flex-shrink: 0;
-  }
+  /* Drop zone */
+  .drop-zone { border: 1.5px dashed var(--border2); border-radius: var(--radius);
+    margin: 2px 8px; padding: 4px 8px; font-size: 10px; color: var(--text3);
+    font-family: var(--mono); text-align: center; display: none; transition: all 0.15s; }
+  .drop-zone.active { border-color: var(--accent); color: var(--accent); background: rgba(59,130,246,0.05); }
 
-  .btn-row {
-    display: flex;
-    gap: 4px;
-    margin-top: 6px;
-  }
+  /* Run button */
+  .run-section { padding: 8px 12px; border-top: 1px solid var(--border); flex-shrink: 0; }
+  .run-btn { width: 100%; display: flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 8px; font-size: 12px; }
+  .run-hint { font-size: 10px; color: var(--text3); font-family: var(--mono);
+    text-align: center; margin-top: 4px; }
 
-  .btn {
-    font-family: var(--sans);
-    font-size: 11px;
-    font-weight: 500;
-    padding: 5px 10px;
-    border-radius: var(--radius);
-    border: 1px solid var(--border2);
-    background: var(--surface2);
-    color: var(--text2);
-    cursor: pointer;
-    transition: all 0.15s;
-    white-space: nowrap;
-  }
+  /* Buttons */
+  .btn { font-family: var(--sans); font-size: 11px; font-weight: 500; padding: 5px 10px;
+    border-radius: var(--radius); border: 1px solid var(--border2); background: var(--surface2);
+    color: var(--text2); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
   .btn:hover { background: var(--border); color: var(--text); }
   .btn:active { transform: translateY(1px); }
-  .btn.primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: #fff;
-  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
   .btn.primary:hover { background: var(--accent-dim); border-color: var(--accent-dim); }
   .btn.danger { color: var(--error); }
   .btn.danger:hover { background: rgba(239,68,68,0.1); border-color: var(--error); }
   .btn.success-btn { background: var(--success); border-color: var(--success); color: #fff; }
   .btn.success-btn:hover { filter: brightness(0.9); }
-  .btn.full { width: 100%; justify-content: center; display: flex; align-items: center; gap: 6px; }
-
-  .run-btn {
-    margin: 8px 12px 4px;
-    padding: 8px;
-    font-size: 12px;
-  }
-
-  .run-hint {
-    font-size: 10px;
-    color: var(--text3);
-    font-family: var(--mono);
-    text-align: center;
-    padding: 0 12px 8px;
-  }
+  .btn.icon-btn { padding: 4px 8px; font-size: 12px; }
 
   /* Main */
-  .main {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-  }
-
-  .tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-    background: var(--surface);
-    flex-shrink: 0;
-  }
-  .tab {
-    padding: 10px 16px;
-    font-size: 12px;
-    font-weight: 500;
-    color: var(--text3);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: all 0.15s;
-  }
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .tabs { display: flex; border-bottom: 1px solid var(--border); padding: 0 16px;
+    background: var(--surface); flex-shrink: 0; }
+  .tab { padding: 10px 16px; font-size: 12px; font-weight: 500; color: var(--text3);
+    cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all 0.15s; }
   .tab:hover { color: var(--text2); }
   .tab.active { color: var(--text); border-bottom-color: var(--accent); }
-
-  .tab-content {
-    display: none;
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-  }
+  .tab-content { display: none; flex: 1; overflow-y: auto; padding: 20px; }
   .tab-content.active { display: flex; flex-direction: column; gap: 16px; }
 
-  .field-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 12px;
-  }
+  /* Form */
+  .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-  }
-
-  label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--text2);
-    letter-spacing: 0.03em;
-  }
-
-  input, select {
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    color: var(--text);
-    font-family: var(--sans);
-    font-size: 12px;
-    padding: 7px 10px;
-    border-radius: var(--radius);
-    outline: none;
-    transition: border-color 0.15s;
-    width: 100%;
-  }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  label { font-size: 11px; font-weight: 500; color: var(--text2); letter-spacing: 0.03em; }
+  input, select { background: var(--surface2); border: 1px solid var(--border2); color: var(--text);
+    font-family: var(--sans); font-size: 12px; padding: 7px 10px; border-radius: var(--radius);
+    outline: none; transition: border-color 0.15s; width: 100%; }
   input:focus, select:focus { border-color: var(--accent); }
   input::placeholder { color: var(--text3); }
   select { appearance: none; cursor: pointer; }
+  .section-title { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text3); margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .action-row { display: flex; gap: 8px; align-items: center; }
 
-  .section-title {
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--text3);
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-title::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: var(--border);
-  }
-
-  .action-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .tables-toolbar {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    margin-bottom: 10px;
-  }
+  /* Tables */
+  .tables-toolbar { display: flex; gap: 6px; align-items: center; margin-bottom: 10px; }
   .tables-search { flex: 1; max-width: 200px; }
-
-  .tables-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 4px;
-    max-height: 320px;
-    overflow-y: auto;
-    padding: 2px;
-  }
-
-  .table-item {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 6px 8px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    border: 1px solid transparent;
-    transition: all 0.1s;
-    user-select: none;
-  }
+  .tables-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 4px; max-height: 320px; overflow-y: auto; padding: 2px; }
+  .table-item { display: flex; align-items: center; gap: 7px; padding: 6px 8px;
+    border-radius: var(--radius); cursor: pointer; border: 1px solid transparent;
+    transition: all 0.1s; user-select: none; }
   .table-item:hover { background: var(--surface2); border-color: var(--border); }
   .table-item.checked { background: rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.3); }
-
-  .table-checkbox {
-    width: 14px; height: 14px;
-    border: 1.5px solid var(--border2);
-    border-radius: 3px;
-    background: var(--surface2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all 0.1s;
-  }
+  .table-checkbox { width: 14px; height: 14px; border: 1.5px solid var(--border2);
+    border-radius: 3px; background: var(--surface2); display: flex; align-items: center;
+    justify-content: center; flex-shrink: 0; transition: all 0.1s; }
   .table-item.checked .table-checkbox { background: var(--accent); border-color: var(--accent); }
   .table-checkbox svg { display: none; }
   .table-item.checked .table-checkbox svg { display: block; }
-
-  .table-name {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text2);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
+  .table-name { font-family: var(--mono); font-size: 11px; color: var(--text2);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .table-item.checked .table-name { color: var(--text); }
 
-  .format-toggle {
-    display: flex;
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    overflow: hidden;
-  }
-  .format-option {
-    padding: 6px 14px;
-    font-size: 11px;
-    font-weight: 500;
-    cursor: pointer;
-    color: var(--text2);
-    background: var(--surface2);
-    transition: all 0.15s;
-    border: none;
-    font-family: var(--sans);
-  }
+  /* Format toggle */
+  .format-toggle { display: flex; border: 1px solid var(--border2); border-radius: var(--radius); overflow: hidden; }
+  .format-option { padding: 6px 14px; font-size: 11px; font-weight: 500; cursor: pointer;
+    color: var(--text2); background: var(--surface2); transition: all 0.15s; border: none;
+    font-family: var(--sans); }
   .format-option:not(:last-child) { border-right: 1px solid var(--border2); }
   .format-option.active { background: var(--accent); color: #fff; }
 
   /* Progress */
   .progress-wrap { display: none; flex-direction: column; gap: 6px; }
   .progress-wrap.visible { display: flex; }
-
-  .progress-profile-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--accent);
-    margin-bottom: 2px;
-  }
-
-  .progress-track {
-    height: 4px;
-    background: var(--border);
-    border-radius: 2px;
-    overflow: hidden;
-  }
-  .progress-fill {
-    height: 100%;
-    background: var(--accent);
-    border-radius: 2px;
-    transition: width 0.3s ease;
-    width: 0%;
-  }
-  .progress-label {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text2);
-  }
+  .progress-context { display: flex; align-items: center; gap: 8px; }
+  .progress-group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .progress-profile-label { font-family: var(--mono); font-size: 10px; color: var(--text2); }
+  .progress-track { height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 2px;
+    transition: width 0.3s ease; width: 0%; }
+  .progress-label { font-family: var(--mono); font-size: 10px; color: var(--text2); }
 
   /* Summary */
-  .summary-wrap {
-    display: none;
-    flex-direction: column;
-    gap: 6px;
-    margin-top: 4px;
-  }
+  .summary-wrap { display: none; flex-direction: column; gap: 6px; margin-top: 4px; }
   .summary-wrap.visible { display: flex; }
-  .summary-title {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--text2);
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-  .summary-item {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: var(--radius);
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    font-size: 11px;
-  }
+  .summary-title { font-size: 11px; font-weight: 600; color: var(--text2);
+    letter-spacing: 0.05em; text-transform: uppercase; }
+  .summary-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 10px;
+    border-radius: var(--radius); background: var(--surface2); border: 1px solid var(--border);
+    font-size: 11px; }
   .summary-item.ok { border-left: 3px solid var(--success); }
   .summary-item.error { border-left: 3px solid var(--error); }
   .summary-item.skipped { border-left: 3px solid var(--warning); }
+  .summary-group { font-size: 10px; color: var(--text3); font-family: var(--mono); }
   .summary-profile { font-weight: 600; color: var(--text); font-family: var(--mono); }
   .summary-detail { color: var(--text2); margin-top: 2px; }
   .summary-warning { color: var(--warning); font-size: 10px; margin-top: 2px; }
-  .summary-output { color: var(--text3); font-size: 10px; font-family: var(--mono); margin-top: 2px; word-break: break-all; }
+  .summary-output { color: var(--text3); font-size: 10px; font-family: var(--mono);
+    margin-top: 2px; word-break: break-all; }
 
   /* Status bar */
-  .statusbar {
-    height: 26px;
-    background: var(--surface);
-    border-top: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    padding: 0 14px;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-  .status-dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
-    background: var(--text3);
-    flex-shrink: 0;
-    transition: background 0.3s;
-  }
+  .statusbar { height: 26px; background: var(--surface); border-top: 1px solid var(--border);
+    display: flex; align-items: center; padding: 0 14px; gap: 10px; flex-shrink: 0; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text3);
+    flex-shrink: 0; transition: background 0.3s; }
   .status-dot.ok { background: var(--success); }
   .status-dot.error { background: var(--error); }
   .status-dot.busy { background: var(--warning); animation: pulse 1s infinite; }
@@ -468,100 +222,55 @@
   .status-text { font-family: var(--mono); font-size: 10px; color: var(--text2); }
 
   /* Toast */
-  .toast {
-    position: fixed;
-    bottom: 40px;
-    right: 20px;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius);
-    padding: 10px 14px;
-    font-size: 12px;
-    color: var(--text);
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    opacity: 0;
-    transform: translateY(6px);
-    transition: all 0.2s;
-    pointer-events: none;
-    max-width: 300px;
-    z-index: 100;
-  }
+  .toast { position: fixed; bottom: 40px; right: 20px; background: var(--surface2);
+    border: 1px solid var(--border2); border-radius: var(--radius); padding: 10px 14px;
+    font-size: 12px; color: var(--text); box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    opacity: 0; transform: translateY(6px); transition: all 0.2s; pointer-events: none;
+    max-width: 300px; z-index: 100; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.ok { border-left: 3px solid var(--success); }
   .toast.error { border-left: 3px solid var(--error); }
 
   .path-row { display: flex; gap: 6px; align-items: center; }
   .path-row input { flex: 1; }
-
+  .badge { display: inline-flex; align-items: center; padding: 2px 6px; border-radius: 10px;
+    font-size: 10px; font-weight: 500; background: rgba(59,130,246,0.15); color: var(--accent);
+    font-family: var(--mono); }
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
   ::-webkit-scrollbar-thumb:hover { background: var(--text3); }
+  .empty-state { text-align: center; padding: 30px 20px; color: var(--text3);
+    font-size: 11px; font-family: var(--mono); }
 
-  .empty-state {
-    text-align: center;
-    padding: 40px 20px;
-    color: var(--text3);
-    font-size: 12px;
-    font-family: var(--mono);
-  }
-  .empty-state svg { opacity: 0.3; margin-bottom: 10px; }
+  /* Modal */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 200; align-items: center; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 8px;
+    padding: 20px; width: 400px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); }
+  .modal-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 14px; }
+  .modal-body { display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  .modal-field { display: flex; flex-direction: column; gap: 5px; }
+  .modal-field label { font-size: 11px; font-weight: 500; color: var(--text2); }
 
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: 500;
-    background: rgba(59,130,246,0.15);
-    color: var(--accent);
-    font-family: var(--mono);
-  }
+  /* Color wheel */
+  .color-row { display: flex; align-items: center; gap: 10px; }
+  .color-preview { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--border2);
+    cursor: pointer; flex-shrink: 0; transition: border-color 0.15s; }
+  .color-preview:hover { border-color: var(--text2); }
+  .color-swatches { display: flex; flex-wrap: wrap; gap: 6px; }
+  .color-swatch { width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+    border: 2px solid transparent; transition: all 0.1s; flex-shrink: 0; }
+  .color-swatch:hover { transform: scale(1.2); }
+  .color-swatch.active { border-color: #fff; box-shadow: 0 0 0 2px var(--accent); }
+  .color-hex-input { flex: 1; }
 
-  /* Confirm dialog */
-  .confirm-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.6);
-    z-index: 200;
-    align-items: center;
-    justify-content: center;
-  }
-  .confirm-overlay.show { display: flex; }
-  .confirm-box {
-    background: var(--surface);
-    border: 1px solid var(--border2);
-    border-radius: 8px;
-    padding: 20px;
-    width: 380px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
-  }
-  .confirm-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 12px;
-  }
-  .confirm-body {
-    font-size: 12px;
-    color: var(--text2);
-    margin-bottom: 16px;
-    line-height: 1.6;
-  }
-  .confirm-body .path {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--text);
-    background: var(--surface2);
-    padding: 4px 8px;
-    border-radius: 4px;
-    display: block;
-    margin-top: 6px;
-    word-break: break-all;
-  }
-  .confirm-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  /* Drag feedback */
+  .profile-item.dragging { opacity: 0.4; }
+  .group-profiles.drag-over { background: rgba(59,130,246,0.05);
+    outline: 1.5px dashed var(--accent); border-radius: 6px; }
 </style>
 </head>
 <body>
@@ -574,65 +283,50 @@
 <div class="layout">
   <!-- Sidebar -->
   <div class="sidebar">
-    <div class="sidebar-section">
-      <div class="sidebar-label">Profiles <span id="selectedBadge" class="badge" style="display:none;margin-left:4px">0</span></div>
-      <div class="profile-list" id="profileList">
-        <div style="font-size:11px;color:var(--text3);padding:8px 4px;font-family:var(--mono)">No profiles saved.</div>
-      </div>
-      <div class="btn-row">
-        <button class="btn" onclick="loadProfile()" title="Load selected profile into connection form">Load</button>
-        <button class="btn" onclick="saveProfile()" title="Save current connection as profile">Save</button>
-        <button class="btn danger" onclick="deleteProfile()" title="Delete selected profile">Del</button>
+    <div class="sidebar-header">
+      <span class="sidebar-label">Profiles <span id="selectedBadge" class="badge" style="display:none">0</span></span>
+      <div style="display:flex;gap:4px">
+        <button class="btn icon-btn" onclick="openGroupModal()" title="New group">+ Group</button>
+        <button class="btn icon-btn" onclick="openSaveProfileModal()" title="Save current connection">+ Profile</button>
       </div>
     </div>
 
-    <button class="btn primary full run-btn" onclick="runSelected()">
-      <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 2l7 4-7 4V2z" fill="currentColor"/></svg>
-      One-Click Export
-    </button>
-    <div class="run-hint" id="runHint">Select one or more profiles</div>
+    <div class="sidebar-scroll" id="sidebarScroll">
+      <div class="empty-state" id="sidebarEmpty">No profiles yet.</div>
+    </div>
+
+    <div class="run-section">
+      <button class="btn primary run-btn" onclick="runSelected()">
+        <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M3 2l7 4-7 4V2z" fill="currentColor"/></svg>
+        One-Click Export
+      </button>
+      <div class="run-hint" id="runHint">Select profiles to export</div>
+    </div>
   </div>
 
   <!-- Main -->
   <div class="main">
     <div class="tabs">
-      <div class="tab active" onclick="switchTab('connection', this)">Connection</div>
-      <div class="tab" onclick="switchTab('tables', this)">Tables <span id="tablesBadge" class="badge" style="display:none;margin-left:4px">0</span></div>
-      <div class="tab" onclick="switchTab('export', this)">Export</div>
+      <div class="tab active" onclick="switchTab('connection',this)">Connection</div>
+      <div class="tab" onclick="switchTab('tables',this)">Tables <span id="tablesBadge" class="badge" style="display:none;margin-left:4px">0</span></div>
+      <div class="tab" onclick="switchTab('export',this)">Export</div>
     </div>
 
-    <!-- Connection tab -->
+    <!-- Connection -->
     <div class="tab-content active" id="tab-connection">
       <div>
         <div class="section-title">Database</div>
         <div class="field-grid three">
-          <div class="field">
-            <label>Dialect</label>
+          <div class="field"><label>Dialect</label>
             <select id="dialect" onchange="onDialectChange()">
               <option value="mysql">MySQL</option>
               <option value="oracle">Oracle</option>
-            </select>
-          </div>
-          <div class="field">
-            <label>Host</label>
-            <input id="host" type="text" value="localhost" placeholder="localhost">
-          </div>
-          <div class="field">
-            <label>Port</label>
-            <input id="port" type="text" value="3306" placeholder="3306">
-          </div>
-          <div class="field">
-            <label>Username</label>
-            <input id="username" type="text" placeholder="root">
-          </div>
-          <div class="field">
-            <label>Password</label>
-            <input id="password" type="password" placeholder="••••••••">
-          </div>
-          <div class="field">
-            <label>Database / Service</label>
-            <input id="database" type="text" placeholder="mydb">
-          </div>
+            </select></div>
+          <div class="field"><label>Host</label><input id="host" value="localhost" placeholder="localhost"></div>
+          <div class="field"><label>Port</label><input id="port" value="3306" placeholder="3306"></div>
+          <div class="field"><label>Username</label><input id="username" placeholder="root"></div>
+          <div class="field"><label>Password</label><input id="password" type="password" placeholder="••••••••"></div>
+          <div class="field"><label>Database / Service</label><input id="database" placeholder="mydb"></div>
         </div>
       </div>
       <div class="action-row">
@@ -641,25 +335,22 @@
       </div>
     </div>
 
-    <!-- Tables tab -->
+    <!-- Tables -->
     <div class="tab-content" id="tab-tables">
       <div>
         <div class="section-title">Tables</div>
         <div class="tables-toolbar">
-          <input class="tables-search" type="text" placeholder="Filter tables…" oninput="filterTables(this.value)">
+          <input class="tables-search" placeholder="Filter tables…" oninput="filterTables(this.value)">
           <button class="btn" onclick="selectAll()">Select all</button>
           <button class="btn" onclick="clearAll()">Clear</button>
         </div>
         <div class="tables-grid" id="tablesGrid">
-          <div class="empty-state">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M3 15h18M9 3v18"/></svg>
-            <div>Load tables to get started</div>
-          </div>
+          <div class="empty-state">Load tables to get started</div>
         </div>
       </div>
     </div>
 
-    <!-- Export tab -->
+    <!-- Export -->
     <div class="tab-content" id="tab-export">
       <div>
         <div class="section-title">Format</div>
@@ -667,41 +358,34 @@
           <button class="format-option active" id="fmt-csv" onclick="setFormat('csv')">CSV</button>
           <button class="format-option" id="fmt-sql" onclick="setFormat('sql')">SQL</button>
         </div>
-        <p style="margin-top:8px;font-size:11px;color:var(--text3)">
-          CSV exports data + schema files. SQL exports CREATE TABLE + INSERT INTO statements.
-        </p>
+        <p style="margin-top:8px;font-size:11px;color:var(--text3)">CSV exports data + schema files. SQL exports CREATE TABLE + INSERT INTO statements.</p>
       </div>
-
       <div>
         <div class="section-title">Output Folder</div>
         <div class="path-row">
-          <input id="outputFolder" type="text" placeholder="~/db_exports">
-          <button class="btn" onclick="browseFolder()">Browse…</button>
+          <input id="outputFolder" placeholder="~/db_exports">
+          <button class="btn" onclick="browseFolder('outputFolder')">Browse…</button>
         </div>
-        <p style="margin-top:6px;font-size:11px;color:var(--text3)">
-          Used for manual exports. Profiles use their own saved folders.
-        </p>
+        <p style="margin-top:6px;font-size:11px;color:var(--text3)">Used for manual exports. Profiles use their own saved folders.</p>
       </div>
-
       <div>
         <div class="section-title">Progress</div>
         <div class="progress-wrap" id="progressWrap">
-          <div class="progress-profile-label" id="progressProfileLabel"></div>
-          <div class="progress-track">
-            <div class="progress-fill" id="progressFill"></div>
+          <div class="progress-context">
+            <div class="progress-group-dot" id="progressGroupDot" style="display:none"></div>
+            <div class="progress-profile-label" id="progressProfileLabel"></div>
           </div>
+          <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
           <div class="progress-label" id="progressLabel">Preparing…</div>
         </div>
         <div id="progressIdle" style="font-size:11px;color:var(--text3);font-family:var(--mono)">No export running.</div>
       </div>
-
       <div>
         <div class="summary-wrap" id="summaryWrap">
           <div class="summary-title">Export Summary</div>
           <div id="summaryItems"></div>
         </div>
       </div>
-
       <div class="action-row">
         <button class="btn primary" onclick="startExport()">
           <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style="margin-right:4px"><path d="M3 2l7 4-7 4V2z" fill="currentColor"/></svg>
@@ -716,39 +400,103 @@
   <div class="status-dot" id="statusDot"></div>
   <div class="status-text" id="statusText">Ready.</div>
 </div>
-
 <div class="toast" id="toast"></div>
 
-<!-- Confirm dialog -->
-<div class="confirm-overlay" id="confirmOverlay">
-  <div class="confirm-box">
-    <div class="confirm-title" id="confirmTitle">Confirm Export</div>
-    <div class="confirm-body" id="confirmBody"></div>
-    <div class="confirm-actions">
-      <button class="btn" onclick="confirmCancel()">Cancel</button>
-      <button class="btn primary" onclick="confirmOk()">Export</button>
+<!-- Group Modal -->
+<div class="modal-overlay" id="groupModal">
+  <div class="modal-box">
+    <div class="modal-title" id="groupModalTitle">New Group</div>
+    <div class="modal-body">
+      <div class="modal-field"><label>Group Name</label><input id="groupName" placeholder="Production"></div>
+      <div class="modal-field">
+        <label>Color</label>
+        <div class="color-row">
+          <div class="color-preview" id="colorPreview" onclick="document.getElementById('colorHexInput').focus()"></div>
+          <div style="flex:1">
+            <div class="color-swatches" id="colorSwatches"></div>
+            <input id="colorHexInput" class="color-hex-input" placeholder="#3b82f6" oninput="onColorHexInput(this.value)" style="margin-top:6px;font-family:var(--mono);font-size:11px">
+          </div>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Base Output Folder <span style="color:var(--text3)">(optional)</span></label>
+        <div class="path-row">
+          <input id="groupOutputFolder" placeholder="~/db_exports/Production">
+          <button class="btn" onclick="browseFolder('groupOutputFolder')">Browse…</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('groupModal')">Cancel</button>
+      <button class="btn primary" onclick="saveGroup()">Save Group</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Modal -->
+<div class="modal-overlay" id="profileModal">
+  <div class="modal-box">
+    <div class="modal-title" id="profileModalTitle">Save Profile</div>
+    <div class="modal-body">
+      <input type="hidden" id="profileOriginalName">
+      <div class="modal-field"><label>Profile Name</label><input id="profileModalName" placeholder="prod-mysql"></div>
+      <div class="modal-field">
+        <label>Group <span style="color:var(--text3)">(optional)</span></label>
+        <select id="profileGroupSelect">
+          <option value="">— No group (standalone) —</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>Output Folder</label>
+        <div class="path-row">
+          <input id="profileOutputFolder" placeholder="Auto-derived from group">
+          <button class="btn" onclick="browseFolder('profileOutputFolder')">Browse…</button>
+        </div>
+        <p id="profileOutputHint" style="font-size:10px;color:var(--text3);margin-top:4px;font-family:var(--mono)"></p>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal('profileModal')">Cancel</button>
+      <button class="btn primary" onclick="saveProfile()">Save Profile</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-title" id="confirmTitle"></div>
+    <div class="modal-body"><div id="confirmBody" style="font-size:12px;color:var(--text2);line-height:1.6"></div></div>
+    <div class="modal-actions">
+      <button class="btn" onclick="confirmResolve(false)">Cancel</button>
+      <button class="btn primary" id="confirmOkBtn" onclick="confirmResolve(true)">Confirm</button>
     </div>
   </div>
 </div>
 
 <script>
 const API = 'http://127.0.0.1:5177/api';
-let tableVars = {};
-let allTables = [];
-let exportFormat = 'csv';
-let progressInterval = null;
 
-// Selected profiles (multi-select)
-let selectedProfiles = new Set();
-// Single active profile for Load/Save/Delete
-let activeProfile = null;
-// All known profiles
-let allProfiles = [];
-
-// Confirm dialog callbacks
+// State
+let tableVars = {}, allTables = [], exportFormat = 'csv', progressInterval = null;
+let selectedProfiles = new Set();   // profile names checked for export
+let activeProfile = null;            // profile loaded into connection form
+let allProfiles = [];                // [{name, group_id, format, output_folder}]
+let allGroups = [];                  // [{id, name, color, base_output_folder}]
+let collapsedGroups = new Set();
 let _confirmResolve = null;
 
-// ---------- Tabs ----------
+// Editing state
+let editingGroupId = null;
+let editingProfileName = null;
+let selectedColor = '#3b82f6';
+
+const SWATCHES = [
+  '#ef4444','#f97316','#f59e0b','#22c55e','#14b8a6',
+  '#3b82f6','#8b5cf6','#ec4899','#64748b','#84cc16'
+];
+
+// ---------- Utilities ----------
 function switchTab(name, el) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -756,7 +504,6 @@ function switchTab(name, el) {
   document.getElementById('tab-' + name).classList.add('active');
 }
 
-// ---------- Status / Toast ----------
 function setStatus(msg, state = '') {
   document.getElementById('statusText').textContent = msg;
   document.getElementById('statusDot').className = 'status-dot' + (state ? ' ' + state : '');
@@ -769,22 +516,53 @@ function toast(msg, type = 'ok') {
   setTimeout(() => el.classList.remove('show'), 3500);
 }
 
-// ---------- Confirm dialog ----------
-function showConfirm(title, bodyHtml) {
+function showConfirm(title, bodyHtml, okLabel = 'Confirm') {
   return new Promise(resolve => {
     _confirmResolve = resolve;
     document.getElementById('confirmTitle').textContent = title;
     document.getElementById('confirmBody').innerHTML = bodyHtml;
-    document.getElementById('confirmOverlay').classList.add('show');
+    document.getElementById('confirmOkBtn').textContent = okLabel;
+    document.getElementById('confirmModal').classList.add('show');
   });
 }
-function confirmOk() {
-  document.getElementById('confirmOverlay').classList.remove('show');
-  if (_confirmResolve) _confirmResolve(true);
+function confirmResolve(val) {
+  document.getElementById('confirmModal').classList.remove('show');
+  if (_confirmResolve) _confirmResolve(val);
 }
-function confirmCancel() {
-  document.getElementById('confirmOverlay').classList.remove('show');
-  if (_confirmResolve) _confirmResolve(false);
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('show');
+}
+
+function hexToRgba(hex, a = 0.15) {
+  const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+// ---------- Color picker ----------
+function initColorSwatches() {
+  const container = document.getElementById('colorSwatches');
+  container.innerHTML = SWATCHES.map(c => `
+    <div class="color-swatch ${c === selectedColor ? 'active' : ''}"
+         style="background:${c}" onclick="pickColor('${c}')" data-color="${c}"></div>
+  `).join('');
+}
+
+function pickColor(hex) {
+  selectedColor = hex;
+  document.getElementById('colorPreview').style.background = hex;
+  document.getElementById('colorHexInput').value = hex;
+  document.querySelectorAll('.color-swatch').forEach(s => {
+    s.classList.toggle('active', s.dataset.color === hex);
+  });
+}
+
+function onColorHexInput(val) {
+  if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+    selectedColor = val;
+    document.getElementById('colorPreview').style.background = val;
+    document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('active'));
+  }
 }
 
 // ---------- Dialect ----------
@@ -809,30 +587,19 @@ async function testConnection() {
   setStatus('Testing connection…', 'busy');
   try {
     const res = await fetch(`${API}/test-connection`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'POST', headers: {'Content-Type':'application/json'},
       body: JSON.stringify(getConnConfig()),
     });
-    if (res.ok) {
-      setStatus('Connection OK.', 'ok');
-      toast('Connection successful.', 'ok');
-    } else {
-      const d = await res.json();
-      setStatus('Connection failed.', 'error');
-      toast(d.detail || 'Connection failed.', 'error');
-    }
-  } catch (e) {
-    setStatus('Connection error.', 'error');
-    toast(String(e), 'error');
-  }
+    if (res.ok) { setStatus('Connection OK.', 'ok'); toast('Connection successful.'); }
+    else { const d = await res.json(); setStatus('Connection failed.','error'); toast(d.detail||'Failed.','error'); }
+  } catch(e) { setStatus('Error.','error'); toast(String(e),'error'); }
 }
 
 async function loadTables() {
-  setStatus('Loading tables…', 'busy');
+  setStatus('Loading tables…','busy');
   try {
     const res = await fetch(`${API}/connect`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify(getConnConfig()),
     });
     const d = await res.json();
@@ -841,126 +608,84 @@ async function loadTables() {
       tableVars = {};
       allTables.forEach(t => tableVars[t] = false);
       renderTables(allTables);
-      updateBadge();
-      setStatus(`Loaded ${allTables.length} tables.`, 'ok');
-      toast(`${allTables.length} tables loaded.`, 'ok');
+      updateTableBadge();
+      setStatus(`Loaded ${allTables.length} tables.`,'ok');
+      toast(`${allTables.length} tables loaded.`);
       document.querySelectorAll('.tab')[1].click();
-    } else {
-      setStatus('Load failed.', 'error');
-      toast(d.detail || 'Load failed.', 'error');
-    }
-  } catch (e) {
-    setStatus('Load error.', 'error');
-    toast(String(e), 'error');
-  }
+    } else { setStatus('Load failed.','error'); toast(d.detail||'Failed.','error'); }
+  } catch(e) { setStatus('Error.','error'); toast(String(e),'error'); }
 }
 
 // ---------- Tables ----------
 function renderTables(tables) {
   const grid = document.getElementById('tablesGrid');
-  if (!tables.length) {
-    grid.innerHTML = '<div class="empty-state"><div>No tables found.</div></div>';
-    return;
-  }
+  if (!tables.length) { grid.innerHTML = '<div class="empty-state">No tables found.</div>'; return; }
   grid.innerHTML = tables.map(t => `
-    <div class="table-item ${tableVars[t] ? 'checked' : ''}" onclick="toggleTable('${t}')" data-name="${t}">
-      <div class="table-checkbox">
-        <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6 8 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
+    <div class="table-item ${tableVars[t]?'checked':''}" onclick="toggleTable('${t}')" data-name="${t}">
+      <div class="table-checkbox"><svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6 8 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
       <span class="table-name" title="${t}">${t}</span>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
-
-function toggleTable(name) {
-  tableVars[name] = !tableVars[name];
-  const el = document.querySelector(`.table-item[data-name="${name}"]`);
-  if (el) el.classList.toggle('checked', tableVars[name]);
-  updateBadge();
+function toggleTable(n) {
+  tableVars[n] = !tableVars[n];
+  const el = document.querySelector(`.table-item[data-name="${n}"]`);
+  if (el) el.classList.toggle('checked', tableVars[n]);
+  updateTableBadge();
 }
-
-function selectAll() {
-  allTables.forEach(t => tableVars[t] = true);
-  renderTables(allTables);
-  updateBadge();
+function selectAll() { allTables.forEach(t => tableVars[t]=true); renderTables(allTables); updateTableBadge(); }
+function clearAll()  { allTables.forEach(t => tableVars[t]=false); renderTables(allTables); updateTableBadge(); }
+function filterTables(q) { renderTables(allTables.filter(t => t.toLowerCase().includes(q.toLowerCase()))); }
+function updateTableBadge() {
+  const n = allTables.filter(t=>tableVars[t]).length;
+  const b = document.getElementById('tablesBadge');
+  b.textContent = n; b.style.display = n > 0 ? 'inline-flex' : 'none';
 }
-
-function clearAll() {
-  allTables.forEach(t => tableVars[t] = false);
-  renderTables(allTables);
-  updateBadge();
-}
-
-function filterTables(query) {
-  const filtered = allTables.filter(t => t.toLowerCase().includes(query.toLowerCase()));
-  renderTables(filtered);
-}
-
-function updateBadge() {
-  const selected = allTables.filter(t => tableVars[t]).length;
-  const badge = document.getElementById('tablesBadge');
-  badge.textContent = selected;
-  badge.style.display = selected > 0 ? 'inline-flex' : 'none';
-}
-
-function getSelectedTables() {
-  return allTables.filter(t => tableVars[t]);
-}
+function getSelectedTables() { return allTables.filter(t=>tableVars[t]); }
 
 // ---------- Format ----------
 function setFormat(fmt) {
   exportFormat = fmt;
-  document.getElementById('fmt-csv').classList.toggle('active', fmt === 'csv');
-  document.getElementById('fmt-sql').classList.toggle('active', fmt === 'sql');
+  document.getElementById('fmt-csv').classList.toggle('active', fmt==='csv');
+  document.getElementById('fmt-sql').classList.toggle('active', fmt==='sql');
 }
 
 // ---------- Browse ----------
-async function browseFolder(targetId = 'outputFolder') {
+async function browseFolder(targetId) {
   if (window.pywebview && window.pywebview.api) {
     try {
       const p = await window.pywebview.api.browse_folder();
       if (p) document.getElementById(targetId).value = p;
-    } catch (e) {
-      const p = prompt('Output folder path:', document.getElementById(targetId).value);
-      if (p) document.getElementById(targetId).value = p;
-    }
-  } else {
-    const p = prompt('Output folder path:', document.getElementById(targetId).value);
-    if (p) document.getElementById(targetId).value = p;
+      return;
+    } catch(e) {}
   }
+  const p = prompt('Folder path:', document.getElementById(targetId).value);
+  if (p) document.getElementById(targetId).value = p;
 }
 
 // ---------- Progress ----------
-function showProgress(visible) {
-  document.getElementById('progressWrap').classList.toggle('visible', visible);
-  document.getElementById('progressIdle').style.display = visible ? 'none' : 'block';
+function showProgress(v) {
+  document.getElementById('progressWrap').classList.toggle('visible', v);
+  document.getElementById('progressIdle').style.display = v ? 'none' : 'block';
 }
 
 function showSummary(items) {
   if (!items || !items.length) return;
-  const wrap = document.getElementById('summaryWrap');
-  const container = document.getElementById('summaryItems');
-  wrap.classList.add('visible');
-
-  container.innerHTML = items.map(item => {
-    const statusClass = item.status === 'ok' ? 'ok' : item.status === 'skipped' ? 'skipped' : 'error';
+  document.getElementById('summaryWrap').classList.add('visible');
+  document.getElementById('summaryItems').innerHTML = items.map(item => {
+    const sc = item.status === 'ok' ? 'ok' : item.status === 'skipped' ? 'skipped' : 'error';
+    const colorDot = item.group_color
+      ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${item.group_color};margin-right:4px;vertical-align:middle"></span>`
+      : '';
+    const groupLabel = item.group ? `<div class="summary-group">${colorDot}${item.group}</div>` : '';
     let detail = '';
-    if (item.status === 'ok') {
+    if (item.status==='ok') {
       detail = `<div class="summary-detail">${item.tables} table(s) exported</div>`;
       if (item.warning) detail += `<div class="summary-warning">⚠ ${item.warning}</div>`;
       detail += `<div class="summary-output">${item.output}</div>`;
-    } else if (item.status === 'skipped') {
-      detail = `<div class="summary-detail">${item.message}</div>`;
     } else {
-      detail = `<div class="summary-detail" style="color:var(--error)">${item.message}</div>`;
+      detail = `<div class="summary-detail" style="color:${item.status==='skipped'?'var(--warning)':'var(--error)'}">${item.message}</div>`;
     }
-    return `
-      <div class="summary-item ${statusClass}">
-        <div style="flex:1">
-          <div class="summary-profile">${item.profile}</div>
-          ${detail}
-        </div>
-      </div>`;
+    return `<div class="summary-item ${sc}"><div style="flex:1">${groupLabel}<div class="summary-profile">${item.profile}</div>${detail}</div></div>`;
   }).join('');
 }
 
@@ -975,154 +700,458 @@ function pollProgress() {
     try {
       const res = await fetch(`${API}/progress`);
       const d = await res.json();
-
-      const pct = d.total > 0 ? Math.round((d.current / d.total) * 100) : 0;
+      const pct = d.total > 0 ? Math.round(d.current/d.total*100) : 0;
       document.getElementById('progressFill').style.width = pct + '%';
 
-      // Show profile context if batch
-      const profileLabel = document.getElementById('progressProfileLabel');
-      if (d.profile_total > 1 && d.profile) {
-        profileLabel.textContent = `Profile ${d.profile_current}/${d.profile_total}: ${d.profile}`;
-      } else if (d.profile) {
-        profileLabel.textContent = d.profile;
+      const dot = document.getElementById('progressGroupDot');
+      if (d.group_color) {
+        dot.style.background = d.group_color;
+        dot.style.display = 'block';
       } else {
-        profileLabel.textContent = '';
+        dot.style.display = 'none';
       }
 
+      const lbl = d.profile_total > 1 && d.profile
+        ? `${d.profile} (${d.profile_current}/${d.profile_total})`
+        : (d.profile || '');
+      document.getElementById('progressProfileLabel').textContent = lbl;
       document.getElementById('progressLabel').textContent =
         d.table ? `[${d.current}/${d.total}] ${d.table}` : 'Working…';
+
+      // Color the progress bar with group color
+      if (d.group_color) {
+        document.getElementById('progressFill').style.background = d.group_color;
+      } else {
+        document.getElementById('progressFill').style.background = 'var(--accent)';
+      }
 
       if (d.done) {
         clearInterval(progressInterval);
         if (d.error) {
-          setStatus('Export failed.', 'error');
-          toast(d.error, 'error');
+          setStatus('Export failed.','error'); toast(d.error,'error');
         } else {
-          const total = d.summary ? d.summary.filter(s => s.status === 'ok').length : 1;
-          const failed = d.summary ? d.summary.filter(s => s.status === 'error').length : 0;
-          setStatus(`Done. ${total} profile(s) exported${failed ? `, ${failed} failed` : ''}.`, 'ok');
-          toast(`Export complete.`, 'ok');
+          const ok = d.summary ? d.summary.filter(s=>s.status==='ok').length : 1;
+          const fail = d.summary ? d.summary.filter(s=>s.status==='error').length : 0;
+          setStatus(`Done. ${ok} profile(s) exported${fail?`, ${fail} failed`:''}.`,'ok');
+          toast('Export complete.');
           document.getElementById('progressFill').style.width = '100%';
           document.getElementById('progressLabel').textContent = 'Complete.';
         }
         if (d.summary && d.summary.length) showSummary(d.summary);
         setTimeout(() => showProgress(false), 1500);
       } else {
-        const profileInfo = d.profile_total > 1 ? ` (${d.profile_current}/${d.profile_total})` : '';
-        setStatus(`Exporting${profileInfo}… ${pct}%`, 'busy');
+        setStatus(`Exporting… ${pct}%`, 'busy');
       }
-    } catch (e) {
-      clearInterval(progressInterval);
-    }
+    } catch(e) { clearInterval(progressInterval); }
   }, 400);
 }
 
 // ---------- Manual export ----------
 async function startExport() {
   const selected = getSelectedTables();
-  if (!selected.length) { toast('Select at least one table.', 'error'); return; }
+  if (!selected.length) { toast('Select at least one table.','error'); return; }
   const out = document.getElementById('outputFolder').value.trim();
-  if (!out) { toast('Set an output folder.', 'error'); return; }
+  if (!out) { toast('Set an output folder.','error'); return; }
 
-  const confirmed = await showConfirm(
-    'Confirm Export',
-    `Exporting <strong>${selected.length}</strong> table(s) as <strong>${exportFormat.toUpperCase()}</strong> to:<span class="path">${out}</span>`
-  );
+  const confirmed = await showConfirm('Confirm Export',
+    `Exporting <strong>${selected.length}</strong> table(s) as <strong>${exportFormat.toUpperCase()}</strong> to:<br>
+     <code style="font-family:var(--mono);font-size:11px;display:block;margin-top:6px;padding:4px 8px;background:var(--surface2);border-radius:4px">${out}</code>`, 'Export');
   if (!confirmed) return;
 
   hideSummary();
-  setStatus('Starting export…', 'busy');
+  setStatus('Starting export…','busy');
   showProgress(true);
   document.querySelectorAll('.tab')[2].click();
 
   try {
     const res = await fetch(`${API}/export`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tables: selected, output_folder: out, format: exportFormat }),
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({tables:selected, output_folder:out, format:exportFormat}),
     });
-    if (res.ok) {
-      pollProgress();
-    } else {
-      const d = await res.json();
-      setStatus('Export failed.', 'error');
-      toast(d.detail || 'Export failed.', 'error');
-      showProgress(false);
-    }
-  } catch (e) {
-    setStatus('Export error.', 'error');
-    toast(String(e), 'error');
-    showProgress(false);
-  }
+    if (res.ok) pollProgress();
+    else { const d=await res.json(); setStatus('Export failed.','error'); toast(d.detail||'Failed.','error'); showProgress(false); }
+  } catch(e) { setStatus('Error.','error'); toast(String(e),'error'); showProgress(false); }
 }
 
-// ---------- Profile list ----------
-function renderProfileList() {
-  const list = document.getElementById('profileList');
-  if (!allProfiles.length) {
-    list.innerHTML = '<div style="font-size:11px;color:var(--text3);padding:8px 4px;font-family:var(--mono)">No profiles saved.</div>';
+// ---------- Sidebar render ----------
+function getGroupById(id) { return allGroups.find(g => g.id === id); }
+
+function renderSidebar() {
+  const scroll = document.getElementById('sidebarScroll');
+  const empty = document.getElementById('sidebarEmpty');
+
+  if (!allProfiles.length && !allGroups.length) {
+    empty.style.display = 'block';
+    scroll.innerHTML = '';
+    scroll.appendChild(empty);
     updateSelectedBadge();
     return;
   }
-  list.innerHTML = allProfiles.map(p => `
-    <div class="profile-item ${selectedProfiles.has(p) ? 'selected' : ''} ${activeProfile === p ? 'active-single' : ''}"
-         onclick="toggleProfileSelect('${p}')"
-         data-profile="${p}">
+
+  empty.style.display = 'none';
+  const grouped = {};
+  const ungrouped = [];
+
+  for (const p of allProfiles) {
+    if (p.group_id) {
+      if (!grouped[p.group_id]) grouped[p.group_id] = [];
+      grouped[p.group_id].push(p);
+    } else {
+      ungrouped.push(p);
+    }
+  }
+
+  let html = '';
+
+  // Render groups
+  for (const g of allGroups) {
+    const profiles = grouped[g.id] || [];
+    const selectedInGroup = profiles.filter(p => selectedProfiles.has(p.name)).length;
+    const allSel = profiles.length > 0 && selectedInGroup === profiles.length;
+    const someSel = selectedInGroup > 0 && !allSel;
+    const collapsed = collapsedGroups.has(g.id);
+
+    html += `
+      <div class="group-header ${allSel?'all-selected':''} ${someSel?'some-selected':''} ${collapsed?'collapsed':''}"
+           data-group-id="${g.id}"
+           ondragover="onGroupDragOver(event,'${g.id}')"
+           ondragleave="onGroupDragLeave(event,'${g.id}')"
+           ondrop="onGroupDrop(event,'${g.id}')">
+        <div class="group-checkbox" onclick="toggleGroupSelect('${g.id}',event)">
+          <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6 8 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="group-color-dot" style="background:${g.color}"></div>
+        <span class="group-name" onclick="toggleGroupCollapse('${g.id}',event)">${g.name}</span>
+        <span class="group-chevron" onclick="toggleGroupCollapse('${g.id}',event)">▼</span>
+        <div class="group-actions">
+          <button class="group-action-btn" onclick="openGroupModal('${g.id}')" title="Edit group">✎</button>
+          <button class="group-action-btn" onclick="deleteGroup('${g.id}')" title="Delete group" style="color:var(--error)">✕</button>
+        </div>
+      </div>
+      <div class="group-profiles ${collapsed?'collapsed':''}" data-group-id="${g.id}">
+        ${profiles.map(p => renderProfileItem(p, g)).join('')}
+      </div>`;
+  }
+
+  // Render ungrouped
+  if (ungrouped.length) {
+    html += `<div class="ungrouped-header" onclick="toggleGroupCollapse('__ungrouped__',event)">
+      <span class="ungrouped-label">Standalone</span>
+      <span style="font-size:9px;color:var(--text3)">${collapsedGroups.has('__ungrouped__')?'▶':'▼'}</span>
+    </div>
+    <div class="group-profiles ${collapsedGroups.has('__ungrouped__')?'collapsed':''}" data-group-id="__ungrouped__">
+      ${ungrouped.map(p => renderProfileItem(p, null)).join('')}
+    </div>`;
+  }
+
+  scroll.innerHTML = html;
+  updateSelectedBadge();
+  updateRunHint();
+  initDraggable();
+}
+
+function renderProfileItem(p, group) {
+  const color = group ? group.color : '';
+  const isSelected = selectedProfiles.has(p.name);
+  const isActive = activeProfile === p.name;
+  return `
+    <div class="profile-item ${isSelected?'selected':''} ${isActive?'active':''}"
+         data-profile="${p.name}" data-group-id="${p.group_id||''}"
+         draggable="true"
+         ondragstart="onProfileDragStart(event,'${p.name}')"
+         ondragend="onProfileDragEnd(event)"
+         onclick="onProfileClick('${p.name}',event)">
+      ${color ? `<div class="profile-color-bar" style="background:${color}"></div>` : ''}
       <div class="profile-checkbox">
         <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6 8 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <span class="profile-item-name" title="${p}">${p}</span>
-    </div>
-  `).join('');
-  updateSelectedBadge();
-  updateRunHint();
+      <span class="profile-item-name" title="${p.name}">${p.name}</span>
+      <span class="profile-fmt">${p.format||'csv'}</span>
+      <div class="profile-actions">
+        <button class="profile-action-btn" onclick="openSaveProfileModal('${p.name}',event)" title="Edit">✎</button>
+        <button class="profile-action-btn" onclick="deleteProfile('${p.name}',event)" title="Delete" style="color:var(--error)">✕</button>
+      </div>
+    </div>`;
 }
 
-function toggleProfileSelect(name) {
-  // Single click = set as active (for load/save/delete)
-  // Also toggle in selected set for batch run
+function onProfileClick(name, e) {
+  if (e.target.closest('.profile-actions')) return;
+  // Toggle checkbox
+  if (selectedProfiles.has(name)) selectedProfiles.delete(name);
+  else selectedProfiles.add(name);
+  // Set as active for load/save context
   activeProfile = name;
-  if (selectedProfiles.has(name)) {
-    selectedProfiles.delete(name);
-  } else {
-    selectedProfiles.add(name);
-  }
-  renderProfileList();
+  renderSidebar();
+}
+
+function toggleGroupCollapse(groupId, e) {
+  e.stopPropagation();
+  if (collapsedGroups.has(groupId)) collapsedGroups.delete(groupId);
+  else collapsedGroups.add(groupId);
+  renderSidebar();
+}
+
+function toggleGroupSelect(groupId, e) {
+  e.stopPropagation();
+  const profiles = allProfiles.filter(p => p.group_id === groupId);
+  const allSel = profiles.every(p => selectedProfiles.has(p.name));
+  if (allSel) profiles.forEach(p => selectedProfiles.delete(p.name));
+  else profiles.forEach(p => selectedProfiles.add(p.name));
+  renderSidebar();
 }
 
 function updateSelectedBadge() {
-  const badge = document.getElementById('selectedBadge');
   const n = selectedProfiles.size;
-  badge.textContent = n;
-  badge.style.display = n > 0 ? 'inline-flex' : 'none';
+  const b = document.getElementById('selectedBadge');
+  b.textContent = n; b.style.display = n > 0 ? 'inline-flex' : 'none';
 }
 
 function updateRunHint() {
-  const hint = document.getElementById('runHint');
   const n = selectedProfiles.size;
-  if (n === 0) hint.textContent = 'Select one or more profiles';
-  else if (n === 1) hint.textContent = `1 profile selected`;
-  else hint.textContent = `${n} profiles selected — runs in sequence`;
+  document.getElementById('runHint').textContent =
+    n === 0 ? 'Select profiles to export' :
+    n === 1 ? '1 profile selected' :
+    `${n} profiles — runs in sequence`;
 }
 
-async function refreshProfiles() {
-  const res = await fetch(`${API}/profiles`);
-  const d = await res.json();
-  allProfiles = d.profiles;
-  // Clean up selected set — remove any that no longer exist
-  for (const p of [...selectedProfiles]) {
-    if (!allProfiles.includes(p)) selectedProfiles.delete(p);
+// ---------- Drag and drop ----------
+let draggingProfile = null;
+
+function initDraggable() {
+  // already set via inline handlers
+}
+
+function onProfileDragStart(e, name) {
+  draggingProfile = name;
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const el = document.querySelector(`.profile-item[data-profile="${name}"]`);
+    if (el) el.classList.add('dragging');
+  }, 0);
+}
+
+function onProfileDragEnd(e) {
+  document.querySelectorAll('.profile-item.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.group-profiles.drag-over').forEach(el => el.classList.remove('drag-over'));
+  draggingProfile = null;
+}
+
+function onGroupDragOver(e, groupId) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = e.altKey ? 'copy' : 'move';
+  const container = document.querySelector(`.group-profiles[data-group-id="${groupId}"]`);
+  if (container) container.classList.add('drag-over');
+}
+
+function onGroupDragLeave(e, groupId) {
+  const container = document.querySelector(`.group-profiles[data-group-id="${groupId}"]`);
+  if (container) container.classList.remove('drag-over');
+}
+
+async function onGroupDrop(e, groupId) {
+  e.preventDefault();
+  document.querySelectorAll('.group-profiles.drag-over').forEach(el => el.classList.remove('drag-over'));
+  if (!draggingProfile) return;
+
+  const isCopy = e.altKey;
+  const targetGroupId = groupId === '__ungrouped__' ? null : groupId;
+
+  const res = await fetch(`${API}/profiles/${encodeURIComponent(draggingProfile)}/move`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({target_group_id: targetGroupId, copy: isCopy}),
+  });
+  if (res.ok) {
+    const d = await res.json();
+    await refreshAll();
+    const groupName = targetGroupId ? (getGroupById(targetGroupId)||{}).name : 'Standalone';
+    toast(isCopy ? `Copied to ${groupName}` : `Moved to ${groupName}`);
+  } else {
+    const d = await res.json();
+    toast(d.detail || 'Move failed.', 'error');
   }
-  if (activeProfile && !allProfiles.includes(activeProfile)) activeProfile = null;
-  renderProfileList();
+  draggingProfile = null;
 }
 
-// ---------- Profile CRUD ----------
-async function loadProfile() {
-  const name = activeProfile;
-  if (!name) { toast('Click a profile to select it first.', 'error'); return; }
+// ---------- Group modal ----------
+function openGroupModal(groupId = null) {
+  editingGroupId = groupId;
+  selectedColor = '#3b82f6';
+
+  if (groupId) {
+    const g = getGroupById(groupId);
+    if (!g) return;
+    document.getElementById('groupModalTitle').textContent = 'Edit Group';
+    document.getElementById('groupName').value = g.name;
+    document.getElementById('groupOutputFolder').value = g.base_output_folder || '';
+    selectedColor = g.color || '#3b82f6';
+  } else {
+    document.getElementById('groupModalTitle').textContent = 'New Group';
+    document.getElementById('groupName').value = '';
+    document.getElementById('groupOutputFolder').value = '';
+    selectedColor = '#3b82f6';
+  }
+
+  initColorSwatches();
+  document.getElementById('colorPreview').style.background = selectedColor;
+  document.getElementById('colorHexInput').value = selectedColor;
+  document.getElementById('groupModal').classList.add('show');
+  setTimeout(() => document.getElementById('groupName').focus(), 50);
+}
+
+async function saveGroup() {
+  const name = document.getElementById('groupName').value.trim();
+  if (!name) { toast('Group name required.','error'); return; }
+  const color = selectedColor;
+  const base = document.getElementById('groupOutputFolder').value.trim();
+
+  if (editingGroupId) {
+    const res = await fetch(`${API}/groups/${editingGroupId}`, {
+      method: 'PATCH', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, color, base_output_folder: base}),
+    });
+    if (res.ok) {
+      closeModal('groupModal');
+      await refreshAll();
+      toast(`Group '${name}' updated.`);
+    } else {
+      const d = await res.json();
+      toast(d.detail||'Update failed.','error');
+    }
+  } else {
+    const res = await fetch(`${API}/groups`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({name, color, base_output_folder: base}),
+    });
+    if (res.ok) {
+      closeModal('groupModal');
+      await refreshAll();
+      toast(`Group '${name}' created.`);
+    } else {
+      const d = await res.json();
+      toast(d.detail||'Create failed.','error');
+    }
+  }
+}
+
+async function deleteGroup(groupId) {
+  const g = getGroupById(groupId);
+  if (!g) return;
+  const confirmed = await showConfirm('Delete Group',
+    `Delete group <strong>${g.name}</strong>? Profiles inside will become standalone.`, 'Delete');
+  if (!confirmed) return;
+  const res = await fetch(`${API}/groups/${groupId}`, {method:'DELETE'});
+  if (res.ok) { await refreshAll(); toast(`Group '${g.name}' deleted.`); }
+  else { const d=await res.json(); toast(d.detail||'Delete failed.','error'); }
+}
+
+// ---------- Profile modal ----------
+function openSaveProfileModal(profileName = null, e = null) {
+  if (e) e.stopPropagation();
+  editingProfileName = profileName;
+
+  // Populate group dropdown
+  const sel = document.getElementById('profileGroupSelect');
+  sel.innerHTML = '<option value="">— No group (standalone) —</option>' +
+    allGroups.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+
+  if (profileName) {
+    // Editing existing
+    document.getElementById('profileModalTitle').textContent = 'Edit Profile';
+    document.getElementById('profileModalName').value = profileName;
+    document.getElementById('profileOriginalName').value = profileName;
+    const meta = allProfiles.find(p => p.name === profileName);
+    if (meta) {
+      sel.value = meta.group_id || '';
+      document.getElementById('profileOutputFolder').value = meta.output_folder || '';
+    }
+  } else {
+    // New profile
+    document.getElementById('profileModalTitle').textContent = 'Save Profile';
+    document.getElementById('profileModalName').value = activeProfile || '';
+    document.getElementById('profileOriginalName').value = '';
+    // Pre-select group if activeProfile has one
+    const meta = activeProfile ? allProfiles.find(p => p.name === activeProfile) : null;
+    sel.value = meta?.group_id || '';
+    document.getElementById('profileOutputFolder').value = '';
+  }
+
+  updateProfileOutputHint();
+  sel.addEventListener('change', updateProfileOutputHint);
+  document.getElementById('profileModal').classList.add('show');
+  setTimeout(() => document.getElementById('profileModalName').focus(), 50);
+}
+
+function updateProfileOutputHint() {
+  const groupId = document.getElementById('profileGroupSelect').value;
+  const name = document.getElementById('profileModalName').value.trim();
+  const hint = document.getElementById('profileOutputHint');
+  if (groupId && name) {
+    const g = getGroupById(groupId);
+    if (g) {
+      const base = g.base_output_folder || `~/db_exports/${g.name}`;
+      hint.textContent = `Auto: ${base}/${name}`;
+      return;
+    }
+  }
+  hint.textContent = '';
+}
+
+async function saveProfile() {
+  const name = document.getElementById('profileModalName').value.trim();
+  if (!name) { toast('Profile name required.','error'); return; }
+  const original = document.getElementById('profileOriginalName').value.trim();
+  const groupId = document.getElementById('profileGroupSelect').value || null;
+  const out = document.getElementById('profileOutputFolder').value.trim();
+
+  const body = {
+    name,
+    original_name: original || null,
+    connection: getConnConfig(),
+    selected_tables: getSelectedTables(),
+    output_folder: out,
+    format: exportFormat,
+    group_id: groupId,
+  };
+
+  const res = await fetch(`${API}/profiles`, {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(body),
+  });
+
+  if (res.ok) {
+    closeModal('profileModal');
+    activeProfile = name;
+    selectedProfiles.add(name);
+    await refreshAll();
+    setStatus(`Saved profile '${name}'.`,'ok');
+    toast(`Profile '${name}' saved.`);
+  } else {
+    const d = await res.json();
+    toast(d.detail||'Save failed.','error');
+  }
+}
+
+async function deleteProfile(name, e) {
+  if (e) e.stopPropagation();
+  const confirmed = await showConfirm('Delete Profile',
+    `Delete profile <strong>${name}</strong>? This cannot be undone.`, 'Delete');
+  if (!confirmed) return;
+  const res = await fetch(`${API}/profiles/${encodeURIComponent(name)}`, {method:'DELETE'});
+  if (res.ok) {
+    selectedProfiles.delete(name);
+    if (activeProfile === name) activeProfile = null;
+    await refreshAll();
+    toast(`Profile '${name}' deleted.`);
+  } else {
+    const d = await res.json();
+    toast(d.detail||'Delete failed.','error');
+  }
+}
+
+// Load profile into connection form
+async function loadProfileIntoForm(name) {
   const res = await fetch(`${API}/profiles/${encodeURIComponent(name)}`);
-  if (!res.ok) { toast('Profile not found.', 'error'); return; }
+  if (!res.ok) { toast('Profile not found.','error'); return; }
   const d = await res.json();
   const cfg = d.connection || {};
   document.getElementById('dialect').value = cfg.dialect || 'mysql';
@@ -1136,107 +1165,73 @@ async function loadProfile() {
   if (d.selected_tables) {
     d.selected_tables.forEach(t => { if (t in tableVars) tableVars[t] = true; });
     renderTables(allTables);
-    updateBadge();
+    updateTableBadge();
   }
-  setStatus(`Loaded profile '${name}'.`, 'ok');
-  toast(`Profile '${name}' loaded.`, 'ok');
+  setStatus(`Loaded '${name}'.`,'ok');
+  toast(`Profile '${name}' loaded into form.`);
+  // Switch to connection tab
+  document.querySelectorAll('.tab')[0].click();
 }
 
-async function saveProfile() {
-  const name = prompt('Profile name:', activeProfile || '');
-  if (!name) return;
-  const out = document.getElementById('outputFolder').value.trim();
-  const body = {
-    name,
-    connection: getConnConfig(),
-    selected_tables: getSelectedTables(),
-    output_folder: out,
-    format: exportFormat,
-  };
-  const res = await fetch(`${API}/profiles`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
-  if (res.ok) {
-    activeProfile = name;
-    selectedProfiles.add(name);
-    await refreshProfiles();
-    setStatus(`Saved profile '${name}'.`, 'ok');
-    toast(`Profile '${name}' saved.`, 'ok');
-  } else {
-    toast('Save failed.', 'error');
-  }
-}
-
-async function deleteProfile() {
-  const name = activeProfile;
-  if (!name) { toast('Click a profile to select it first.', 'error'); return; }
-  const confirmed = await showConfirm('Delete Profile', `Delete profile <strong>${name}</strong>? This cannot be undone.`);
-  if (!confirmed) return;
-  await fetch(`${API}/profiles/${encodeURIComponent(name)}`, { method: 'DELETE' });
-  selectedProfiles.delete(name);
-  if (activeProfile === name) activeProfile = null;
-  await refreshProfiles();
-  setStatus(`Deleted profile '${name}'.`, 'ok');
-}
-
-// ---------- One-Click Export ----------
+// ---------- Run ----------
 async function runSelected() {
-  if (selectedProfiles.size === 0) {
-    toast('Select at least one profile first.', 'error');
-    return;
-  }
-
+  if (selectedProfiles.size === 0) { toast('Select at least one profile.','error'); return; }
   const names = [...selectedProfiles];
 
-  // Build confirm body
   let bodyHtml = `Running <strong>${names.length}</strong> profile(s) in sequence:<ul style="margin:8px 0 0 16px;line-height:2">`;
-  bodyHtml += names.map(n => `<li style="font-family:var(--mono);font-size:11px">${n}</li>`).join('');
-  bodyHtml += '</ul><p style="margin-top:10px;font-size:11px;color:var(--text3)">Each profile exports to its own saved folder. Failed profiles will be skipped.</p>';
+  for (const n of names) {
+    const meta = allProfiles.find(p => p.name === n);
+    const g = meta?.group_id ? getGroupById(meta.group_id) : null;
+    const dot = g ? `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${g.color};margin-right:6px;vertical-align:middle"></span>` : '';
+    const groupLabel = g ? `<span style="color:var(--text3);font-size:10px">${g.name} / </span>` : '';
+    bodyHtml += `<li style="font-family:var(--mono);font-size:11px">${dot}${groupLabel}${n}</li>`;
+  }
+  bodyHtml += '</ul><p style="margin-top:10px;font-size:11px;color:var(--text3)">Failed profiles will be skipped. Check the summary after export.</p>';
 
-  const confirmed = await showConfirm('Confirm Batch Export', bodyHtml);
+  const confirmed = await showConfirm('Confirm Export', bodyHtml, 'Export');
   if (!confirmed) return;
 
   hideSummary();
-  setStatus(`Starting batch export for ${names.length} profile(s)…`, 'busy');
+  setStatus(`Starting batch export…`,'busy');
   showProgress(true);
   document.querySelectorAll('.tab')[2].click();
 
   if (names.length === 1) {
-    // Single profile — use existing run endpoint
-    const res = await fetch(`${API}/profiles/${encodeURIComponent(names[0])}/run`, { method: 'POST' });
-    if (res.ok) {
-      pollProgress();
-    } else {
-      const d = await res.json();
-      setStatus('Run failed.', 'error');
-      toast(d.detail || 'Run failed.', 'error');
-      showProgress(false);
-    }
+    const res = await fetch(`${API}/profiles/${encodeURIComponent(names[0])}/run`, {method:'POST'});
+    if (res.ok) pollProgress();
+    else { const d=await res.json(); setStatus('Run failed.','error'); toast(d.detail||'Failed.','error'); showProgress(false); }
   } else {
-    // Batch
     const res = await fetch(`${API}/profiles/batch-run`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ profiles: names }),
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({profiles: names}),
     });
-    if (res.ok) {
-      pollProgress();
-    } else {
-      const d = await res.json();
-      setStatus('Batch run failed.', 'error');
-      toast(d.detail || 'Batch run failed.', 'error');
-      showProgress(false);
-    }
+    if (res.ok) pollProgress();
+    else { const d=await res.json(); setStatus('Batch failed.','error'); toast(d.detail||'Failed.','error'); showProgress(false); }
   }
+}
+
+// ---------- Data refresh ----------
+async function refreshAll() {
+  const [pRes, gRes] = await Promise.all([
+    fetch(`${API}/profiles`),
+    fetch(`${API}/groups`),
+  ]);
+  const pData = await pRes.json();
+  const gData = await gRes.json();
+  allProfiles = pData.profiles || [];
+  allGroups = gData.groups || [];
+  // Clean up selected set
+  const names = new Set(allProfiles.map(p => p.name));
+  for (const n of [...selectedProfiles]) { if (!names.has(n)) selectedProfiles.delete(n); }
+  renderSidebar();
 }
 
 // ---------- Init ----------
 window.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('outputFolder').value =
     navigator.platform.includes('Win') ? '%USERPROFILE%\\db_exports' : '~/db_exports';
-  await refreshProfiles();
+  initColorSwatches();
+  await refreshAll();
 });
 </script>
 </body>
