@@ -303,7 +303,7 @@
       </button>
       <div class="run-hint" id="runHint">Select profiles to export</div>
       <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px;line-height:1.5;padding:0 4px;font-family:var(--mono)">
-        Click to select · Double-click to load into form
+        Click to select · Hover for ⬇ edit delete
       </div>
     </div>
   </div>
@@ -880,8 +880,7 @@ function renderProfileItem(p, group) {
          draggable="true"
          ondragstart="onProfileDragStart(event,'${p.name}')"
          ondragend="onProfileDragEnd(event)"
-         onclick="onProfileClick('${p.name}',event)"
-         ondblclick="onProfileDblClick('${p.name}',event)">
+         onclick="onProfileClick('${p.name}',event)">
       ${color ? `<div class="profile-color-bar" style="background:${color}"></div>` : ''}
       <div class="profile-checkbox">
         <svg width="9" height="7" viewBox="0 0 9 7" fill="none"><path d="M1 3.5L3.5 6 8 1" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -889,6 +888,7 @@ function renderProfileItem(p, group) {
       <span class="profile-item-name" title="${p.name}">${p.name}</span>
       <span class="profile-fmt">${p.format||'csv'}</span>
       <div class="profile-actions">
+        <button class="profile-action-btn" onclick="onLoadDetails('${p.name}',event)" title="Load into form">⬇</button>
         <button class="profile-action-btn" onclick="openSaveProfileModal('${p.name}',event)" title="Edit">✎</button>
         <button class="profile-action-btn" onclick="deleteProfile('${p.name}',event)" title="Delete" style="color:var(--error)">✕</button>
       </div>
@@ -905,9 +905,8 @@ function onProfileClick(name, e) {
   renderSidebar();
 }
 
-function onProfileDblClick(name, e) {
+function onLoadDetails(name, e) {
   e.stopPropagation();
-  if (e.target.closest('.profile-actions')) return;
   loadProfileIntoForm(name);
 }
 
