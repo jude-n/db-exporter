@@ -1,5 +1,5 @@
 """
-Group registry — stores groups in ~/.db_exporter/groups.json
+Group registry — stores groups in <project_root>/groups.json
 
 Each group has:
   id                 — stable UUID, never changes even on rename
@@ -14,8 +14,9 @@ import os
 import uuid
 from typing import Optional
 
-
-DEFAULT_PATH = os.path.join(os.path.expanduser("~"), ".db_exporter", "groups.json")
+# Project root = the directory containing this file's parent (profiles/)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_PATH = os.path.join(_PROJECT_ROOT, "groups.json")
 
 
 class GroupRegistry:
@@ -83,8 +84,8 @@ class GroupRegistry:
     def derive_output_path(self, group_id: str, profile_name: str) -> str:
         g = self._groups.get(group_id)
         if not g:
-            return os.path.join(os.path.expanduser("~"), "db_exports", profile_name)
+            return os.path.join(_PROJECT_ROOT, "exports", profile_name)
         base = g.get("base_output_folder") or os.path.join(
-            os.path.expanduser("~"), "db_exports", g["name"]
+            _PROJECT_ROOT, "exports", g["name"]
         )
         return os.path.join(base, profile_name)

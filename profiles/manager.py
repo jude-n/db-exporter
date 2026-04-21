@@ -1,5 +1,5 @@
 """
-Profile manager — JSON files under ~/.db_exporter/profiles/.
+Profile manager — JSON files under <project_root>/profiles/.
 Passwords are stored in the OS keychain via keyring_store.py.
 
 Profile JSON structure:
@@ -13,8 +13,9 @@ import json
 import os
 from typing import List, Optional
 
-
-DEFAULT_DIR = os.path.join(os.path.expanduser("~"), ".db_exporter", "profiles")
+# Project root = the directory containing this file's parent (profiles/)
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DEFAULT_DIR = os.path.join(_PROJECT_ROOT, "profiles")
 
 
 class ProfileManager:

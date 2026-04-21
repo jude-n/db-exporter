@@ -177,7 +177,7 @@ def _resolve_profile_output(profile_name: str, saved_folder: str,
     # No group — use saved folder or default
     if folder:
         return folder
-    return os.path.join(os.path.expanduser("~"), "db_exports", profile_name)
+    return os.path.join(_PROJECT_ROOT, "exports", profile_name)
 
 
 def _group_color(group_id: Optional[str]) -> str:
@@ -216,7 +216,9 @@ def _validate_table_ownership(wanted: set, connector) -> tuple[list[str], list[s
 
 # ---------- Run history ----------
 
-_RUN_HISTORY_PATH = os.path.join(os.path.expanduser("~"), ".db_exporter", "run_history.json")
+# Project root resolved from this file's location
+_PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+_RUN_HISTORY_PATH = os.path.join(_PROJECT_ROOT, "run_history.json")
 _MAX_HISTORY = 100  # keep last 100 entries
 
 
