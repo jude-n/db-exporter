@@ -153,13 +153,27 @@ def _resolve_profile_output(profile_name: str, saved_folder: str,
                              group_id: Optional[str]) -> str:
     """
     Return the effective output path for a profile.
-    If the profile has a non-empty saved_folder, use it.
-    Otherwise auto-derive from group.
+
+    Rules:
+    - If the profile has a saved_folder AND a group, treat saved_folder as the
+      base and append group_name/profile_name so the structure is always consistent.
+    - If the profile has a saved_folder but NO group, use it as-is (standalone).
+    - If no saved_folder, auto-derive from group or fall back to ~/db_exports/profile.
     """
-    if saved_folder and saved_folder.strip():
-        return saved_folder.strip()
+    folder = (saved_folder or "").strip()
+
     if group_id:
-        return group_registry.derive_output_path(group_id, profile_name)
+        g = group_registry.get(group_id)
+        group_name = g["name"] if g else ""
+        if folder:
+            # Custom base set — append group/profile underneath
+            return os.path.join(folder, group_name, profile_name)
+        else:
+            return group_registry.derive_output_path(group_id, profile_name)
+
+    # No group — use saved folder or default
+    if folder:
+        return folder
     return os.path.join(os.path.expanduser("~"), "db_exports", profile_name)
 
 
@@ -168,6 +182,33 @@ def _group_color(group_id: Optional[str]) -> str:
         return ""
     g = group_registry.get(group_id)
     return g["color"] if g else ""
+
+
+def _validate_table_ownership(wanted: set, connector) -> tuple[list[str], list[str]]:
+    """
+    Cross-check wanted tables against what the connected user can actually see.
+    Returns (to_export, warnings) where warnings lists inaccessible tables.
+    """
+    try:
+        available = set(connector.list_tables())
+    except Exception as e:
+        return [], [f"Could not list tables: {e}"]
+
+    to_export = sorted(wanted & available)
+    missing = wanted - available
+
+    warnings = []
+    if missing:
+        warnings.append(
+            f"{len(missing)} table(s) not accessible for this user "
+            f"(may belong to a different schema): {', '.join(sorted(missing))}"
+        )
+    if not to_export:
+        warnings.append(
+            "No tables could be exported. Check that you are connecting with "
+            "the correct user who owns these tables."
+        )
+    return to_export, warnings
 
 
 # ---------- Routes ----------
@@ -468,17 +509,24 @@ def run_profile(name: str):
                     try: _connector.close()
                     except: pass
                 _connector = conn
-            all_tables = set(_connector.list_tables())
-            to_export = sorted(wanted & all_tables)
+            to_export, tbl_warnings = _validate_table_ownership(wanted, _connector)
+            if not to_export:
+                raise RuntimeError(
+                    tbl_warnings[0] if tbl_warnings else
+                    "No tables to export — they may belong to a different schema or user."
+                )
             os.makedirs(out, exist_ok=True)
             if fmt == "sql":
                 export_tables_to_sql(_connector, to_export, out, progress_cb=progress_cb)
             else:
                 export_tables_to_csv(_connector, to_export, out, progress_cb=progress_cb)
+            entry = {"profile": name, "group": group_name, "group_color": color,
+                     "status": "ok", "tables": len(to_export), "output": out}
+            if tbl_warnings:
+                entry["warning"] = " | ".join(tbl_warnings)
             _progress.update({
                 "current": len(to_export), "done": True, "error": None,
-                "summary": [{"profile": name, "group": group_name, "group_color": color,
-                             "status": "ok", "tables": len(to_export), "output": out}],
+                "summary": [entry],
             })
         except Exception as e:
             _progress.update({
