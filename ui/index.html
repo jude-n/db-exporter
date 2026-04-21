@@ -293,6 +293,7 @@
 
     <div class="sidebar-scroll" id="sidebarScroll">
       <div class="empty-state" id="sidebarEmpty">No profiles yet.</div>
+      <div id="sidebarInner"></div>
     </div>
 
     <div class="run-section">
@@ -782,9 +783,10 @@ function renderSidebar() {
 
   if (!allProfiles.length && !allGroups.length) {
     empty.style.display = 'block';
-    scroll.innerHTML = '';
-    scroll.appendChild(empty);
+    const inner = document.getElementById('sidebarInner');
+    if (inner) inner.innerHTML = '';
     updateSelectedBadge();
+    updateRunHint();
     return;
   }
 
@@ -844,10 +846,15 @@ function renderSidebar() {
     </div>`;
   }
 
-  scroll.innerHTML = html;
+  let inner = document.getElementById('sidebarInner');
+  if (!inner) {
+    inner = document.createElement('div');
+    inner.id = 'sidebarInner';
+    scroll.appendChild(inner);
+  }
+  inner.innerHTML = html;
   updateSelectedBadge();
   updateRunHint();
-  initDraggable();
 }
 
 function renderProfileItem(p, group) {
@@ -958,7 +965,7 @@ async function onGroupDrop(e, groupId) {
 
   const res = await fetch(`${API}/profiles/${encodeURIComponent(draggingProfile)}/move`, {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({target_group_id: targetGroupId, copy: isCopy}),
+    body: JSON.stringify({target_group_id: targetGroupId, is_copy: isCopy}),
   });
   if (res.ok) {
     const d = await res.json();
@@ -1076,7 +1083,8 @@ function openSaveProfileModal(profileName = null, e = null) {
   }
 
   updateProfileOutputHint();
-  sel.addEventListener('change', updateProfileOutputHint);
+  sel.onchange = updateProfileOutputHint;
+  document.getElementById('profileModalName').oninput = updateProfileOutputHint;
   document.getElementById('profileModal').classList.add('show');
   setTimeout(() => document.getElementById('profileModalName').focus(), 50);
 }

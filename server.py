@@ -127,7 +127,7 @@ class SaveProfileRequest(BaseModel):
 
 class MoveProfileRequest(BaseModel):
     target_group_id: Optional[str] = None
-    copy: bool = False
+    is_copy: bool = False
 
 
 class BatchRunRequest(BaseModel):
@@ -391,7 +391,7 @@ def move_profile(name: str, req: MoveProfileRequest):
     if not data:
         raise HTTPException(status_code=404, detail="Profile not found.")
 
-    if req.copy:
+    if req.is_copy:
         # Find a non-colliding name
         new_name = f"{name} (copy)"
         counter = 2

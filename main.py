@@ -12,9 +12,11 @@ class API:
 
     def browse_folder(self):
         """Open a native folder picker and return the selected path."""
-        result = webview.windows[0].create_file_dialog(
-            webview.FOLDER_DIALOG
-        )
+        try:
+            dialog = webview.FileDialog.FOLDER
+        except AttributeError:
+            dialog = webview.FOLDER_DIALOG
+        result = webview.windows[0].create_file_dialog(dialog)
         if result and len(result) > 0:
             return result[0]
         return None
