@@ -303,7 +303,7 @@
       </button>
       <div class="run-hint" id="runHint">Select profiles to export</div>
       <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px;line-height:1.5;padding:0 4px;font-family:var(--mono)">
-        Click to select · Hover for ⬇ edit delete
+        Click to select · Hover for ⬇ ⎘ edit delete
       </div>
     </div>
   </div>
@@ -889,6 +889,7 @@ function renderProfileItem(p, group) {
       <span class="profile-fmt">${p.format||'csv'}</span>
       <div class="profile-actions">
         <button class="profile-action-btn" onclick="onLoadDetails('${p.name}',event)" title="Load into form">⬇</button>
+        <button class="profile-action-btn" onclick="copyProfile('${p.name}',event)" title="Copy profile">⎘</button>
         <button class="profile-action-btn" onclick="openSaveProfileModal('${p.name}',event)" title="Edit">✎</button>
         <button class="profile-action-btn" onclick="deleteProfile('${p.name}',event)" title="Delete" style="color:var(--error)">✕</button>
       </div>
@@ -1200,6 +1201,25 @@ async function deleteProfile(name, e) {
   } else {
     const d = await res.json();
     toast(d.detail||'Delete failed.','error');
+  }
+}
+
+async function copyProfile(name, e) {
+  if (e) e.stopPropagation();
+  // Copy to same group by default
+  const meta = allProfiles.find(p => p.name === name);
+  const groupId = meta?.group_id || null;
+  const res = await fetch(`${API}/profiles/${encodeURIComponent(name)}/move`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({target_group_id: groupId, is_copy: true}),
+  });
+  if (res.ok) {
+    const d = await res.json();
+    await refreshAll();
+    toast(`Copied as '${d.new_name}'.`);
+  } else {
+    const d = await res.json();
+    toast(d.detail || 'Copy failed.', 'error');
   }
 }
 

@@ -341,11 +341,11 @@ def save_profile(req: SaveProfileRequest):
 
     # If editing an existing profile (name changed), rename the file
     original = (req.original_name or "").strip()
-    if original and original != req.name:
+    if original and original.lower() != req.name.lower():
+        # Name actually changed (not just case) — do a full rename
         _validate_profile_name(original)
         try:
             profile_manager.rename(original, req.name)
-            # Move keyring entry
             old_pw = get_password(original) or password
             delete_password(original)
             set_password(req.name, old_pw)
@@ -353,6 +353,16 @@ def save_profile(req: SaveProfileRequest):
             raise HTTPException(status_code=400, detail=f"Profile '{req.name}' already exists.")
         except FileNotFoundError:
             pass  # original didn't exist yet — just save new
+    elif original and original != req.name:
+        # Case-only rename — delete old keyring entry, save will overwrite the file
+        old_pw = get_password(original) or password
+        delete_password(original)
+        set_password(req.name, old_pw)
+        # Delete old file if safe name differs
+        try:
+            profile_manager.delete(original)
+        except Exception:
+            pass
 
     set_password(req.name, password)
     profile_manager.save(req.name, data)
