@@ -798,10 +798,27 @@ async function startExport() {
   const out = document.getElementById('outputFolder').value.trim();
   if (!out) { toast('Set an output folder.','error'); return; }
 
+  const tableList = selected.length <= 20
+    ? `<div style="margin-top:8px;max-height:120px;overflow-y:auto;background:var(--surface2);border-radius:4px;padding:6px 8px">` +
+      selected.map(t => `<div style="font-family:var(--mono);font-size:10px;color:var(--text2)">${t}</div>`).join('') +
+      `</div>`
+    : `<div style="margin-top:6px;font-size:11px;color:var(--text2)">(${selected.length} tables — too many to list)</div>`;
+
   const confirmed = await showConfirm('Confirm Export',
     `Exporting <strong>${selected.length}</strong> table(s) as <strong>${exportFormat.toUpperCase()}</strong> to:<br>
-     <code style="font-family:var(--mono);font-size:11px;display:block;margin-top:6px;padding:4px 8px;background:var(--surface2);border-radius:4px">${out}</code>`, 'Export');
+     <code style="font-family:var(--mono);font-size:11px;display:block;margin-top:6px;padding:4px 8px;background:var(--surface2);border-radius:4px">${out}</code>
+     ${tableList}`, 'Export');
   if (!confirmed) return;
+
+  // Check nothing is already running
+  try {
+    const chk = await fetch(`${API}/progress`);
+    const chkd = await chk.json();
+    if (chkd.running) {
+      toast('An export is already running — wait for it to finish.', 'error');
+      return;
+    }
+  } catch(e) {}
 
   hideSummary();
   setStatus('Starting export…','busy');
@@ -1149,15 +1166,20 @@ function openSaveProfileModal(profileName = null, e = null) {
 function updateProfileOutputHint() {
   const groupId = document.getElementById('profileGroupSelect').value;
   const name = document.getElementById('profileModalName').value.trim();
+  const customBase = document.getElementById('profileOutputFolder').value.trim();
   const hint = document.getElementById('profileOutputHint');
   if (groupId && name) {
     const g = getGroupById(groupId);
     if (g) {
-      const base = g.base_output_folder || `~/db_exports/${g.name}`;
-      hint.textContent = `Auto: ${base}/${name}`;
+      const base = customBase || g.base_output_folder || `~/db_exports/${g.name}`;
+      hint.textContent = `→ ${base}/${g.name}/${name}`;
+      hint.style.color = 'var(--accent)';
     } else {
       hint.textContent = '';
     }
+  } else if (customBase && name) {
+    hint.textContent = `→ ${customBase}/${name}`;
+    hint.style.color = 'var(--text3)';
   } else {
     hint.textContent = '';
   }
@@ -1301,10 +1323,31 @@ async function runSelected() {
     const groupLabel = g ? `<span style="color:var(--text3);font-size:10px">${g.name} / </span>` : '';
     bodyHtml += `<li style="font-family:var(--mono);font-size:11px">${dot}${groupLabel}${n}</li>`;
   }
+  // Show saved tables per profile
+  for (const n of names) {
+    const meta = allProfiles.find(p => p.name === n);
+    if (meta && meta.selected_tables && meta.selected_tables.length) {
+      const tables = meta.selected_tables;
+      const preview = tables.length <= 10
+        ? tables.map(t => `<span style="font-family:var(--mono);font-size:9px;background:var(--border);padding:1px 4px;border-radius:2px;margin:1px;display:inline-block">${t}</span>`).join(' ')
+        : `<span style="font-size:10px;color:var(--text3)">${tables.length} tables saved</span>`;
+      bodyHtml += `<div style="margin-left:20px;margin-bottom:4px;font-size:10px">${preview}</div>`;
+    }
+  }
   bodyHtml += '</ul><p style="margin-top:10px;font-size:11px;color:var(--text3)">Failed profiles will be skipped. Check the summary after export.</p>';
 
   const confirmed = await showConfirm('Confirm Export', bodyHtml, 'Export');
   if (!confirmed) return;
+
+  // Check nothing is already running
+  try {
+    const chk = await fetch(`${API}/progress`);
+    const chkd = await chk.json();
+    if (chkd.running) {
+      toast('An export is already running — wait for it to finish.', 'error');
+      return;
+    }
+  } catch(e) {}
 
   hideSummary();
   setStatus(`Starting batch export…`,'busy');

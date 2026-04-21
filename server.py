@@ -98,6 +98,7 @@ _progress: dict[str, Any] = {
     "group": "", "group_color": "",
     "done": False, "error": None, "summary": [],
 }
+_export_running = False   # prevents simultaneous exports
 
 
 # ---------- Models ----------
@@ -310,7 +311,9 @@ def list_tables():
 
 @app.post("/api/export")
 def export(req: ExportRequest):
-    global _progress
+    global _progress, _export_running
+    if _export_running:
+        raise HTTPException(status_code=409, detail="An export is already running. Wait for it to finish.")
     with _connector_lock:
         if not _connector:
             raise HTTPException(status_code=400, detail="Not connected.")
@@ -328,7 +331,10 @@ def export(req: ExportRequest):
     def progress_cb(table, i, n):
         _progress.update({"current": i, "total": n, "table": table})
 
+    _export_running = True
+
     def worker():
+        global _export_running
         try:
             os.makedirs(safe_out, exist_ok=True)
             if req.format == "sql":
@@ -338,6 +344,8 @@ def export(req: ExportRequest):
             _progress.update({"current": len(req.tables), "done": True, "error": None})
         except Exception as e:
             _progress.update({"done": True, "error": str(e)})
+        finally:
+            _export_running = False
 
     threading.Thread(target=worker, daemon=True).start()
     return {"ok": True}
@@ -345,7 +353,7 @@ def export(req: ExportRequest):
 
 @app.get("/api/progress")
 def get_progress():
-    return _progress
+    return {**_progress, "running": _export_running}
 
 
 # -- History & stale check --
@@ -449,10 +457,23 @@ def save_profile(req: SaveProfileRequest):
     conn = dict(req.connection)
     password = conn.pop("password", "")
 
-    # Resolve output folder
+    # Store only the BASE output folder — group/profile structure is
+    # appended at export time by _resolve_profile_output so it never double-appends.
     out = req.output_folder.strip()
+    if req.group_id and out:
+        g = group_registry.get(req.group_id)
+        if g:
+            group_name = g["name"]
+            # Strip group/profile suffix if user accidentally saved the full derived path
+            derived_suffix_1 = os.path.join(group_name, req.name)
+            derived_suffix_2 = req.name
+            if out.endswith(os.sep + derived_suffix_1):
+                out = out[: -(len(derived_suffix_1) + 1)]
+            elif out.endswith(os.sep + derived_suffix_2):
+                out = out[: -(len(derived_suffix_2) + 1)]
+    # If no explicit folder given, leave blank — derive at export time
     if not out and req.group_id:
-        out = group_registry.derive_output_path(req.group_id, req.name)
+        out = ""
 
     data = {
         "connection": conn,
@@ -552,7 +573,9 @@ def move_profile(name: str, req: MoveProfileRequest):
 @app.post("/api/profiles/{name}/run")
 def run_profile(name: str):
     _validate_profile_name(name)
-    global _connector, _progress
+    global _connector, _progress, _export_running
+    if _export_running:
+        raise HTTPException(status_code=409, detail="An export is already running. Wait for it to finish.")
     data = profile_manager.load(name)
     if not data:
         raise HTTPException(status_code=404, detail="Profile not found.")
@@ -619,7 +642,16 @@ def run_profile(name: str):
                              "status": "error", "message": str(e)}],
             })
 
-    threading.Thread(target=worker, daemon=True).start()
+    _export_running = True
+
+    def _run_wrapper():
+        try:
+            worker()
+        finally:
+            global _export_running
+            _export_running = False
+
+    threading.Thread(target=_run_wrapper, daemon=True).start()
     return {"ok": True}
 
 
@@ -627,7 +659,9 @@ def run_profile(name: str):
 
 @app.post("/api/profiles/batch-run")
 def batch_run(req: BatchRunRequest):
-    global _progress
+    global _progress, _export_running
+    if _export_running:
+        raise HTTPException(status_code=409, detail="An export is already running. Wait for it to finish.")
     if not req.profiles:
         raise HTTPException(status_code=400, detail="No profiles selected.")
 
@@ -719,7 +753,16 @@ def batch_run(req: BatchRunRequest):
         _progress.update({"done": True, "error": None, "summary": summary,
                            "profile": "", "group": "", "group_color": "", "table": ""})
 
-    threading.Thread(target=worker, daemon=True).start()
+    _export_running = True
+
+    def _batch_wrapper():
+        try:
+            worker()
+        finally:
+            global _export_running
+            _export_running = False
+
+    threading.Thread(target=_batch_wrapper, daemon=True).start()
     return {"ok": True}
 
 
