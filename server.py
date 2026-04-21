@@ -231,12 +231,15 @@ def _load_history() -> list[dict]:
 
 
 def _append_history(entry: dict) -> None:
-    history = _load_history()
-    history.insert(0, entry)
-    history = history[:_MAX_HISTORY]
-    os.makedirs(os.path.dirname(_RUN_HISTORY_PATH), exist_ok=True)
-    with open(_RUN_HISTORY_PATH, "w", encoding="utf-8") as f:
-        json.dump(history, f, indent=2)
+    try:
+        history = _load_history()
+        history.insert(0, entry)
+        history = history[:_MAX_HISTORY]
+        os.makedirs(os.path.dirname(_RUN_HISTORY_PATH), exist_ok=True)
+        with open(_RUN_HISTORY_PATH, "w", encoding="utf-8") as f:
+            json.dump(history, f, indent=2)
+    except Exception:
+        pass  # never let history writing crash an export
 
 
 def _record_export(profile: str, group: str, tables: int,
@@ -606,6 +609,7 @@ def run_profile(name: str):
 
     def worker():
         global _connector
+        out_path = out  # captured from outer scope, always defined
         try:
             conn = get_connector(cfg["dialect"])(cfg)
             conn.connect()
@@ -620,22 +624,22 @@ def run_profile(name: str):
                     tbl_warnings[0] if tbl_warnings else
                     "No tables to export — they may belong to a different schema or user."
                 )
-            os.makedirs(out, exist_ok=True)
+            os.makedirs(out_path, exist_ok=True)
             if fmt == "sql":
-                export_tables_to_sql(_connector, to_export, out, progress_cb=progress_cb)
+                export_tables_to_sql(_connector, to_export, out_path, progress_cb=progress_cb)
             else:
-                export_tables_to_csv(_connector, to_export, out, progress_cb=progress_cb)
+                export_tables_to_csv(_connector, to_export, out_path, progress_cb=progress_cb)
             entry = {"profile": name, "group": group_name, "group_color": color,
-                     "status": "ok", "tables": len(to_export), "output": out}
+                     "status": "ok", "tables": len(to_export), "output": out_path}
             if tbl_warnings:
                 entry["warning"] = " | ".join(tbl_warnings)
-            _record_export(name, group_name, len(to_export), out, "ok")
+            _record_export(name, group_name, len(to_export), out_path, "ok")
             _progress.update({
                 "current": len(to_export), "done": True, "error": None,
                 "summary": [entry],
             })
         except Exception as e:
-            _record_export(name, group_name, 0, out if "out" in dir() else "", "error", str(e))
+            _record_export(name, group_name, 0, out_path, "error", str(e))
             _progress.update({
                 "done": True, "error": str(e),
                 "summary": [{"profile": name, "group": group_name, "group_color": color,
