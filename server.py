@@ -4,6 +4,8 @@ Runs on a background thread; PyWebView opens a native window pointed at it.
 """
 from __future__ import annotations
 
+import datetime
+import json
 import os
 import re
 import sys
@@ -211,6 +213,44 @@ def _validate_table_ownership(wanted: set, connector) -> tuple[list[str], list[s
     return to_export, warnings
 
 
+# ---------- Run history ----------
+
+_RUN_HISTORY_PATH = os.path.join(os.path.expanduser("~"), ".db_exporter", "run_history.json")
+_MAX_HISTORY = 100  # keep last 100 entries
+
+
+def _load_history() -> list[dict]:
+    try:
+        if os.path.exists(_RUN_HISTORY_PATH):
+            with open(_RUN_HISTORY_PATH, "r", encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+
+def _append_history(entry: dict) -> None:
+    history = _load_history()
+    history.insert(0, entry)
+    history = history[:_MAX_HISTORY]
+    os.makedirs(os.path.dirname(_RUN_HISTORY_PATH), exist_ok=True)
+    with open(_RUN_HISTORY_PATH, "w", encoding="utf-8") as f:
+        json.dump(history, f, indent=2)
+
+
+def _record_export(profile: str, group: str, tables: int,
+                   output: str, status: str, message: str = "") -> None:
+    _append_history({
+        "profile": profile,
+        "group": group,
+        "tables": tables,
+        "output": output,
+        "status": status,
+        "message": message,
+        "timestamp": datetime.datetime.now().isoformat(timespec="seconds"),
+    })
+
+
 # ---------- Routes ----------
 
 @app.get("/")
@@ -306,6 +346,48 @@ def export(req: ExportRequest):
 @app.get("/api/progress")
 def get_progress():
     return _progress
+
+
+# -- History & stale check --
+
+@app.get("/api/history")
+def get_history():
+    return {"history": _load_history()}
+
+
+@app.delete("/api/history")
+def clear_history():
+    if os.path.exists(_RUN_HISTORY_PATH):
+        os.remove(_RUN_HISTORY_PATH)
+    return {"ok": True}
+
+
+@app.post("/api/profiles/{name}/check-stale")
+def check_stale(name: str):
+    """
+    Connect using the profile's credentials and compare saved tables
+    against what the DB currently exposes. Returns stale=True if any
+    saved tables are missing.
+    """
+    _validate_profile_name(name)
+    data = profile_manager.load(name)
+    if not data:
+        raise HTTPException(status_code=404, detail="Profile not found.")
+    password = get_password(name) or ""
+    cfg = dict(data["connection"])
+    cfg["password"] = password
+    wanted = set(data.get("selected_tables", []))
+    if not wanted:
+        return {"stale": False, "missing": []}
+    try:
+        conn = get_connector(cfg["dialect"])(cfg)
+        conn.connect()
+        available = set(conn.list_tables())
+        conn.close()
+        missing = sorted(wanted - available)
+        return {"stale": len(missing) > 0, "missing": missing}
+    except Exception as e:
+        return {"stale": None, "error": str(e)}
 
 
 # -- Groups --
@@ -524,11 +606,13 @@ def run_profile(name: str):
                      "status": "ok", "tables": len(to_export), "output": out}
             if tbl_warnings:
                 entry["warning"] = " | ".join(tbl_warnings)
+            _record_export(name, group_name, len(to_export), out, "ok")
             _progress.update({
                 "current": len(to_export), "done": True, "error": None,
                 "summary": [entry],
             })
         except Exception as e:
+            _record_export(name, group_name, 0, out if "out" in dir() else "", "error", str(e))
             _progress.update({
                 "done": True, "error": str(e),
                 "summary": [{"profile": name, "group": group_name, "group_color": color,
