@@ -1,5 +1,5 @@
 """
-Profile manager — JSON files under <project_root>/profiles/.
+Profile manager — JSON files under <project_root>/profiles/data/
 Passwords are stored in the OS keychain via keyring_store.py.
 
 Profile JSON structure:
@@ -13,9 +13,11 @@ import json
 import os
 from typing import List, Optional
 
-# Project root = the directory containing this file's parent (profiles/)
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_DIR = os.path.join(_PROJECT_ROOT, "profiles")
+# profiles/ dir = directory containing this file
+# project root   = one level above profiles/
+_PROFILES_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_PROFILES_DIR)
+DEFAULT_DIR = os.path.join(_PROFILES_DIR, "data")
 
 
 class ProfileManager:
@@ -66,7 +68,6 @@ class ProfileManager:
             return json.load(f)
 
     def rename(self, old_name: str, new_name: str) -> None:
-        """Rename a profile by renaming its JSON file. Preserves all data."""
         old_path = self._path(old_name)
         new_path = self._path(new_name)
         if not os.path.exists(old_path):
@@ -81,7 +82,6 @@ class ProfileManager:
             os.remove(path)
 
     def ungroup(self, group_id: str) -> List[str]:
-        """Remove group_id from all profiles in a group. Returns affected profile names."""
         affected = []
         for name in self.list():
             data = self.load(name)
@@ -92,7 +92,6 @@ class ProfileManager:
         return affected
 
     def reassign_group(self, profile_name: str, new_group_id: Optional[str]) -> None:
-        """Move a profile to a different group (or ungroup if new_group_id is None)."""
         data = self.load(profile_name)
         if data is None:
             raise FileNotFoundError(f"Profile '{profile_name}' not found.")

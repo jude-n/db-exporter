@@ -1,5 +1,5 @@
 """
-Group registry — stores groups in <project_root>/groups.json
+Group registry — stores groups in <project_root>/profiles/groups/groups.json
 
 Each group has:
   id                 — stable UUID, never changes even on rename
@@ -14,9 +14,11 @@ import os
 import uuid
 from typing import Optional
 
-# Project root = the directory containing this file's parent (profiles/)
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEFAULT_PATH = os.path.join(_PROJECT_ROOT, "groups.json")
+# profiles/ dir = directory containing this file
+# project root   = one level above profiles/
+_PROFILES_DIR = os.path.dirname(os.path.abspath(__file__))
+_PROJECT_ROOT = os.path.dirname(_PROFILES_DIR)
+DEFAULT_PATH = os.path.join(_PROFILES_DIR, "groups", "groups.json")
 
 
 class GroupRegistry:
@@ -66,7 +68,7 @@ class GroupRegistry:
                color: Optional[str] = None,
                base_output_folder: Optional[str] = None) -> dict:
         if group_id not in self._groups:
-            raise KeyError(f"Group not found.")
+            raise KeyError("Group not found.")
         g = self._groups[group_id]
         if name is not None:
             g["name"] = name.strip()
