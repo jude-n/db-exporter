@@ -7,8 +7,11 @@ dist/
 build/
 *.spec
 
-# Exports
-db_exports/
+# App data — keep out of version control
+profiles/data/
+profiles/groups/groups.json
+run_history.json
+exports/
 
 # OS
 .DS_Store
