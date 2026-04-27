@@ -723,35 +723,45 @@ def batch_run(req: BatchRunRequest):
                 continue
 
             try:
-                conn = get_connector(cfg["dialect"])(cfg)
-                conn.connect()
+                # Use a dedicated connector per profile — never share state between profiles
+                profile_conn = get_connector(cfg["dialect"])(cfg)
+                profile_conn.connect()
+
+                # Update shared connector so UI table-list calls work
                 with _connector_lock:
                     if _connector:
                         try: _connector.close()
                         except: pass
-                    _connector = conn
+                    _connector = profile_conn
 
-                all_tables = set(_connector.list_tables())
-                to_export = sorted(wanted & all_tables)
-                missing = wanted - all_tables
+                to_export, tbl_warnings = _validate_table_ownership(wanted, profile_conn)
+                if not to_export:
+                    msg = tbl_warnings[0] if tbl_warnings else "No accessible tables found."
+                    summary.append({"profile": name, "group": group_name, "group_color": color,
+                                    "status": "error", "message": msg})
+                    continue
+
                 _progress.update({"total": len(to_export)})
 
-                def progress_cb(table, i, n):
-                    _progress.update({"current": i, "total": n, "table": table})
+                # Define progress_cb with default arg to capture current loop values
+                def progress_cb(table, i, n, _p=name):
+                    _progress.update({"current": i, "total": n, "table": table, "profile": _p})
 
                 os.makedirs(out, exist_ok=True)
                 if fmt == "sql":
-                    export_tables_to_sql(_connector, to_export, out, progress_cb=progress_cb)
+                    export_tables_to_sql(profile_conn, to_export, out, progress_cb=progress_cb)
                 else:
-                    export_tables_to_csv(_connector, to_export, out, progress_cb=progress_cb)
+                    export_tables_to_csv(profile_conn, to_export, out, progress_cb=progress_cb)
 
                 entry = {"profile": name, "group": group_name, "group_color": color,
                          "status": "ok", "tables": len(to_export), "output": out}
-                if missing:
-                    entry["warning"] = f"{len(missing)} table(s) no longer exist: {', '.join(sorted(missing))}"
+                if tbl_warnings:
+                    entry["warning"] = " | ".join(tbl_warnings)
+                _record_export(name, group_name, len(to_export), out, "ok")
                 summary.append(entry)
 
             except Exception as e:
+                _record_export(name, group_name, 0, out, "error", str(e))
                 summary.append({"profile": name, "group": group_name, "group_color": color,
                                  "status": "error", "message": str(e)})
                 continue
