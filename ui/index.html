@@ -356,11 +356,21 @@
       <div class="action-row">
         <button class="btn primary" onclick="testConnection()">Test Connection</button>
         <button class="btn success-btn" onclick="loadTables()">Load Tables</button>
+        <button class="btn" onclick="resetForm()" title="Clear form and start fresh" style="margin-left:auto">↺ Reset</button>
       </div>
+
+      <!-- Active profile bar — shown when a profile is loaded -->
+      <div id="activeProfileBar" style="display:none;align-items:center;gap:10px;padding:8px 12px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.3);border-radius:var(--radius);margin-top:4px">
+        <span style="font-size:12px;color:var(--success)">●</span>
+        <span style="font-size:11px;color:var(--text2)">Loaded:</span>
+        <span id="activeProfileName" style="font-family:var(--mono);font-size:11px;color:var(--text);font-weight:600"></span>
+        <button class="btn success-btn" onclick="saveActiveProfile()" style="margin-left:auto;font-size:11px;padding:4px 10px">Save Profile</button>
+      </div>
+
       <div style="display:flex;align-items:flex-start;gap:8px;padding:10px 12px;background:rgba(59,130,246,0.06);border:1px solid rgba(59,130,246,0.2);border-radius:var(--radius);margin-top:4px">
         <span style="font-size:14px;line-height:1">💡</span>
         <p style="font-size:11px;color:var(--text2);line-height:1.6">
-          To save a profile, fill in your connection details, load and select tables, choose a format on the Export tab, then click <strong>+ Profile</strong> in the sidebar. All of that gets saved together.
+          Load a profile using ⬇ in the sidebar, then hit <strong>Load Tables</strong> to connect and refresh table list. Use <strong>Save Profile</strong> above to save any changes. Hit <strong>↺ Reset</strong> to start a clean connection.
         </p>
       </div>
     </div>
@@ -652,6 +662,15 @@ async function loadTables() {
       allTables = d.tables;
       tableVars = {};
       allTables.forEach(t => tableVars[t] = false);
+
+      // Re-apply saved profile checkboxes if a profile is loaded
+      if (activeProfile) {
+        const meta = allProfiles.find(p => p.name === activeProfile);
+        if (meta && meta.selected_tables) {
+          meta.selected_tables.forEach(t => { if (t in tableVars) tableVars[t] = true; });
+        }
+      }
+
       renderTables(allTables);
       updateTableBadge();
       setStatus(`Loaded ${allTables.length} tables.`,'ok');
@@ -1287,6 +1306,8 @@ async function loadProfileIntoForm(name) {
   if (!res.ok) { toast('Profile not found.','error'); return; }
   const d = await res.json();
   const cfg = d.connection || {};
+
+  // Fill connection form
   document.getElementById('dialect').value = cfg.dialect || 'mysql';
   document.getElementById('host').value = cfg.host || '';
   document.getElementById('port').value = cfg.port || '';
@@ -1295,19 +1316,91 @@ async function loadProfileIntoForm(name) {
   document.getElementById('database').value = cfg.database || '';
   if (d.output_folder) document.getElementById('outputFolder').value = d.output_folder;
   if (d.format) setFormat(d.format);
-  // Reset and apply selected tables
-  allTables.forEach(t => tableVars[t] = false);
-  if (d.selected_tables) {
-    d.selected_tables.forEach(t => { if (t in tableVars) tableVars[t] = true; });
-  }
-  renderTables(allTables);
+
+  // Store saved tables from profile
+  const savedTables = d.selected_tables || [];
+
+  // Always reset to saved tables when loading a profile
+  // This ensures switching between profiles never bleeds table state
+  allTables = [...savedTables];
+  tableVars = {};
+  savedTables.forEach(t => tableVars[t] = true);
+  renderTables(savedTables);
   updateTableBadge();
-  // Set as active and highlight in sidebar
+
+  // Set as active, update sidebar highlight
   activeProfile = name;
   renderSidebar();
+
+  // Show a persistent save button in the connection tab
+  updateActiveProfileBar(name);
+
   setStatus(`Loaded '${name}'.`,'ok');
-  toast(`Profile '${name}' loaded into form.`);
+  toast(`Profile '${name}' loaded — hit Load Tables to refresh from DB.`);
   document.querySelectorAll('.tab')[0].click();
+}
+
+function updateActiveProfileBar(name) {
+  const bar = document.getElementById('activeProfileBar');
+  if (!bar) return;
+  if (name) {
+    bar.style.display = 'flex';
+    document.getElementById('activeProfileName').textContent = name;
+  } else {
+    bar.style.display = 'none';
+  }
+}
+
+function resetForm() {
+  document.getElementById('dialect').value = 'mysql';
+  document.getElementById('host').value = 'localhost';
+  document.getElementById('port').value = '3306';
+  document.getElementById('username').value = '';
+  document.getElementById('password').value = '';
+  document.getElementById('database').value = '';
+  document.getElementById('outputFolder').value =
+    navigator.platform.includes('Win') ? '%USERPROFILE%\\db_exports' : '~/db_exports';
+  setFormat('csv');
+  allTables = [];
+  tableVars = {};
+  renderTables([]);
+  updateTableBadge();
+  activeProfile = null;
+  updateActiveProfileBar(null);
+  renderSidebar();
+  setStatus('Form cleared.', 'ok');
+  toast('Form reset — ready for a new connection.');
+  document.querySelectorAll('.tab')[0].click();
+}
+
+async function saveActiveProfile() {
+  if (!activeProfile) { toast('No profile loaded.', 'error'); return; }
+  const cfg = getConnConfig();
+  if (!cfg.host || !cfg.user || !cfg.database) {
+    toast('Fill in connection details before saving.', 'error'); return;
+  }
+  const meta = allProfiles.find(p => p.name === activeProfile);
+  const body = {
+    name: activeProfile,
+    original_name: activeProfile,
+    connection: cfg,
+    selected_tables: getSelectedTables(),
+    output_folder: document.getElementById('outputFolder').value.trim(),
+    format: exportFormat,
+    group_id: meta?.group_id || null,
+  };
+  const res = await fetch(`${API}/profiles`, {
+    method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  if (res.ok) {
+    await refreshAll();
+    setStatus(`Saved '${activeProfile}'.`, 'ok');
+    toast(`Profile '${activeProfile}' saved.`);
+  } else {
+    const d = await res.json();
+    toast(d.detail || 'Save failed.', 'error');
+  }
 }
 
 // ---------- Run ----------
@@ -1434,7 +1527,10 @@ async function refreshAll() {
   // Clean up selected and active sets
   const names = new Set(allProfiles.map(p => p.name));
   for (const n of [...selectedProfiles]) { if (!names.has(n)) selectedProfiles.delete(n); }
-  if (activeProfile && !names.has(activeProfile)) activeProfile = null;
+  if (activeProfile && !names.has(activeProfile)) {
+    activeProfile = null;
+    updateActiveProfileBar(null);
+  }
   renderSidebar();
   // Background stale check — runs after render, won't block UI
   checkStaleProfiles();
@@ -1446,6 +1542,7 @@ window.addEventListener('DOMContentLoaded', async () => {
     navigator.platform.includes('Win') ? '%USERPROFILE%\\db_exports' : '~/db_exports';
   initColorSwatches();
   await refreshAll();
+  updateActiveProfileBar(activeProfile);
 });
 </script>
 </body>

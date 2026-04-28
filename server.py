@@ -453,7 +453,12 @@ def delete_group(group_id: str):
 
 @app.get("/api/profiles")
 def list_profiles():
-    return {"profiles": profile_manager.list_with_meta()}
+    profiles = profile_manager.list_with_meta()
+    # Enrich with selected_tables for UI display
+    for p in profiles:
+        data = profile_manager.load(p["name"]) or {}
+        p["selected_tables"] = data.get("selected_tables", [])
+    return {"profiles": profiles}
 
 
 @app.post("/api/profiles")
