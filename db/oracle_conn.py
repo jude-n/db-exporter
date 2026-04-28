@@ -15,6 +15,8 @@ def _build_oracle_type(data_type: str, data_length, data_precision, data_scale, 
 
     if dt in ("VARCHAR2", "NVARCHAR2", "CHAR", "NCHAR"):
         length = data_length or 255
+        # If char_used is C, caller already passed char_length as data_length
+        # so we include CHAR unit to preserve the original definition semantics
         unit = " CHAR" if char_used == "C" else ""
         return f"{dt}({length}{unit})"
 
@@ -61,7 +63,16 @@ class OracleConnector(BaseConnector):
     def list_tables(self) -> List[str]:
         cur = self.conn.cursor()
         try:
-            cur.execute("SELECT table_name FROM user_tables ORDER BY table_name")
+            # Exclude external tables — they cause ORA-06564 when queried with SELECT *
+            # because they reference directory objects / preprocessors not available at export time
+            cur.execute("""
+                SELECT table_name
+                FROM user_tables
+                WHERE table_name NOT IN (
+                    SELECT table_name FROM user_external_tables
+                )
+                ORDER BY table_name
+            """)
             return [row[0] for row in cur.fetchall()]
         finally:
             cur.close()
@@ -77,6 +88,7 @@ class OracleConnector(BaseConnector):
                        data_precision,
                        data_scale,
                        char_used,
+                       char_length,
                        nullable,
                        data_default
                 FROM user_tab_columns
@@ -88,8 +100,11 @@ class OracleConnector(BaseConnector):
             rows = cur.fetchall()
             result = []
             for r in rows:
-                col_name, data_type, data_length, data_precision, data_scale, char_used, nullable, data_default = r
-                full_type = _build_oracle_type(data_type, data_length, data_precision, data_scale, char_used)
+                col_name, data_type, data_length, data_precision, data_scale, char_used, char_length, nullable, data_default = r
+                # Use char_length when column is defined in CHAR semantics
+                # data_length is bytes which gives wrong sizes for multibyte charsets
+                effective_length = char_length if (char_used == 'C' and char_length) else data_length
+                full_type = _build_oracle_type(data_type, effective_length, data_precision, data_scale, char_used)
                 result.append(ColumnInfo(
                     name=col_name,
                     data_type=full_type,
@@ -100,15 +115,40 @@ class OracleConnector(BaseConnector):
         finally:
             cur.close()
 
+    @staticmethod
+    def _read_value(val):
+        """
+        Convert Oracle-specific types to plain Python values.
+        - LOB (CLOB/BLOB): read content, truncate BLOB to None (not exportable as SQL)
+        - Everything else: pass through
+        """
+        try:
+            import oracledb
+            if isinstance(val, oracledb.LOB):
+                lob_type = val.type
+                if lob_type == oracledb.DB_TYPE_CLOB or lob_type == oracledb.DB_TYPE_NCLOB:
+                    return val.read()
+                else:
+                    # BLOB — skip, not importable as SQL literal
+                    return None
+        except Exception:
+            pass
+        return val
+
     def stream_rows(self, table: str, batch_size: int = 1000) -> Iterable[Tuple[List[str], List[tuple]]]:
         cur = self.conn.cursor()
         try:
             cur.execute(f'SELECT * FROM "{table}"')
             columns = [d[0] for d in cur.description]
             while True:
-                batch = cur.fetchmany(batch_size)
-                if not batch:
+                raw_batch = cur.fetchmany(batch_size)
+                if not raw_batch:
                     break
+                # Convert LOB objects to plain Python values
+                batch = [
+                    tuple(self._read_value(v) for v in row)
+                    for row in raw_batch
+                ]
                 yield columns, batch
         finally:
             cur.close()
